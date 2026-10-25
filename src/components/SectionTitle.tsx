@@ -1,0 +1,2 @@
+import { Link } from 'react-router-dom'; import { ArrowLeft } from 'lucide-react';
+export default function SectionTitle({eyebrow,title,description,to,more='عرض الكل'}:{eyebrow?:string;title:string;description?:string;to?:string;more?:string}){return <div className="section-title"><div>{eyebrow&&<span className="eyebrow">{eyebrow}</span>}<h2>{title}</h2>{description&&<p>{description}</p>}</div>{to&&<Link className="text-link" to={to}>{more}<ArrowLeft size={16}/></Link>}</div>}
