@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- منع التكبير غير المقصود: maximum-scale=1 + touch-action في CSS + خط 16px للحقول.
+         لا نستخدم JavaScript لمنع اللمسات. بعض المتصفحات وإعدادات إمكانية الوصول قد تتجاوز ذلك. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b16" />
+    <meta name="description" content="يلا رياضة | Yalla Riyada — المنصة الأقوى في الوطن العربي: مباريات، أخبار، مساعد ذكي، ومتجر رياضي." />
+    <meta property="og:title" content="يلا رياضة | YALLA RIYADA" />
+    <meta property="og:description" content="The Strongest Sports Platform in the Arab World" />
+    <meta property="og:image" content="./assets/brand/og-image.png" />
+    <link rel="icon" type="image/svg+xml" href="./assets/brand/favicon.svg" />
+    <link rel="apple-touch-icon" href="./assets/brand/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>يلا رياضة | YALLA RIYADA</title>
+    <script>
+      // يضبط اللغة والاتجاه والمظهر قبل أول رسم لتفادي الوميض
+      try {
+        var l = localStorage.getItem('yr_lang') || 'ar';
+        var th = localStorage.getItem('yr_theme') || 'dark';
+        document.documentElement.lang = l;
+        document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.setAttribute('data-theme', th);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>يتطلب هذا الموقع تفعيل JavaScript. / This site requires JavaScript.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
