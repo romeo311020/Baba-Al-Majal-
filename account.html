@@ -1,1 +1,70 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="theme-color" content="#000000"><title>حسابي | يلا رياضة</title><link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg"><link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta property="og:site_name" content="يلا رياضة | YALLA RIYADA"><meta property="og:type" content="website"><meta property="og:image" content="assets/brand/og-image.png"><meta name="twitter:card" content="summary_large_image"><script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script><link rel="stylesheet" href="styles.css"></head><body><div id="shared-header"></div><main class="wrap page"><span class="kicker">YOUR ACCOUNT</span><h1>حسابي</h1><p class="note">تسجيل الدخول الحقيقي عبر Supabase Auth بعد إعداد ملف الاتصال.</p><section class="panel"><h2>تسجيل الدخول / إنشاء حساب</h2><form id="account-form" class="form-stack"><input type="email" id="email" placeholder="البريد الإلكتروني" required><input type="password" id="password" placeholder="كلمة المرور (عرض تجريبي فقط)" required minlength="8"><div class="row"><button class="btn primary" id="account-signin" type="submit">تسجيل الدخول</button><button class="btn outline" id="account-signup" type="button">إنشاء حساب</button></div></form><p id="account-message" class="note"></p><button id="logout" class="btn outline">تسجيل الخروج</button></section></main><div id="shared-footer"></div><script src="app.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script><script src="supabase-config.js"></script><script src="supabase-client.js"></script><script src="supabase-account.js"></script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>حسابي | يلا رياضة</title>
+  <link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:site_name" content="يلا رياضة | YALLA RIYADA">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/brand/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="shared-header"></div>
+  <main class="wrap page account-page">
+    <section class="account-card" aria-labelledby="account-title">
+      <div class="account-intro">
+        <span class="kicker">YOUR ACCOUNT</span>
+        <h1 id="account-title">أهلاً بك في <em>يلا رياضة</em></h1>
+        <p>سجّل دخولك وتابع كل ما تحبه في عالم الرياضة من مكان واحد.</p>
+        <div class="account-benefit"><span aria-hidden="true">✦</span> حسابك الرياضي، بكل سهولة وأمان</div>
+      </div>
+      <div class="account-panel">
+        <div class="account-tabs" role="tablist" aria-label="نوع الحساب">
+          <button class="account-tab active" id="signin-tab" type="button" role="tab" aria-selected="true">تسجيل الدخول</button>
+          <button class="account-tab" id="signup-tab" type="button" role="tab" aria-selected="false">إنشاء حساب</button>
+        </div>
+        <p class="account-heading" id="account-heading">سجّل دخولك إلى حسابك</p>
+        <form id="account-form" class="form-stack account-form" novalidate>
+          <label id="name-field" class="account-field" hidden for="full-name">الاسم
+            <input id="full-name" name="name" type="text" autocomplete="name" placeholder="اكتب اسمك">
+          </label>
+          <label class="account-field" for="email">البريد الإلكتروني
+            <input type="email" id="email" name="email" autocomplete="email" placeholder="name@example.com" required>
+          </label>
+          <label class="account-field" for="password">كلمة المرور
+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="اكتب كلمة المرور" required minlength="8">
+          </label>
+          <label id="confirm-field" class="account-field" hidden for="confirm-password">تأكيد كلمة المرور
+            <input type="password" id="confirm-password" name="confirm-password" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور" minlength="8">
+          </label>
+          <button class="btn primary account-submit" id="account-submit" type="submit">تسجيل الدخول</button>
+        </form>
+        <div class="account-divider"><span>أو تابع باستخدام</span></div>
+        <button class="btn outline google-button" id="google-signin" type="button">
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.74 7.18l7.72 5.99c4.51-4.17 7.06-10.31 7.06-17.64z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.55 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.81l-7.72-5.99c-2.14 1.44-4.89 2.3-8.19 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          الدخول باستخدام Google
+        </button>
+        <p class="account-message note" id="account-message" role="status" aria-live="polite"></p>
+        <div class="account-session" id="account-session" hidden>
+          <span id="session-email"></span>
+          <button id="logout" class="btn outline" type="button">تسجيل الخروج</button>
+        </div>
+        <p class="account-terms">بالمتابعة، أنت توافق على استخدام حسابك وفق شروط المنصة.</p>
+      </div>
+    </section>
+  </main>
+  <div id="shared-footer"></div>
+  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="supabase-account.js"></script>
+</body>
+</html>

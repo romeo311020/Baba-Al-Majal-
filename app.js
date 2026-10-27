@@ -1,5 +1,5 @@
-// يلا رياضة — السكربت المشترك: الهيدر/الفوتر، شريط الموبايل، الثيم، المباريات التجريبية، المتجر، المساعد.
-// كل البيانات هنا تجريبية وخيالية. عند ربط Supabase تُستبدل بالبيانات الحقيقية (انظر supabase-public.js).
+// يلا رياضة — السكربت المشترك: الهيدر/الفوتر، شريط الموبايل، الثيم، المتجر، المساعد.
+// المباريات تُحمّل من Supabase Edge Function في supabase-football.js.
 (() => {
   'use strict';
 
@@ -25,7 +25,7 @@
   /* ---------- الهيدر ---------- */
   const nav = [
     ['index.html', 'الرئيسية'], ['matches.html', 'المباريات'], ['news.html', 'الأخبار'],
-    ['assistant.html', 'المساعد الذكي'], ['store.html', 'المتجر'], ['account.html', 'حسابي'],
+    ['assistant.html', 'المساعد الذكي'], ['store.html', 'المتجر قريبًا'], ['account.html', 'حسابي'],
   ];
   const header = $('shared-header');
   if (header) {
@@ -50,7 +50,7 @@
   const footer = $('shared-footer');
   if (footer) {
     footer.innerHTML = `<footer class="footer"><div class="wrap foot">${brand}
-      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="assistant.html">Yalla AI</a><a href="store.html">المتجر</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
+      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="assistant.html">Yalla AI</a><a href="store.html">المتجر قريبًا</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
       <div class="credit">تصميم وتطوير <a href="${contact}" target="_blank" rel="noopener noreferrer">Romany Garges</a></div>
       <small class="copyright">© ${new Date().getFullYear()} YALLA RIYADA</small></div></footer>`;
   }
@@ -61,7 +61,7 @@
     ['index.html', 'الرئيسية', ico('<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>')],
     ['matches.html', 'المباريات', ico('<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/>')],
     ['assistant.html', 'المساعد', ico('<path d="M12 3l2.2 6.3L21 12l-6.8 2.7L12 21l-2.2-6.3L3 12l6.8-2.7z"/>')],
-    ['store.html', 'المتجر', ico('<path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/>')],
+    ['store.html', 'قريبًا', ico('<path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/>')],
     ['account.html', 'حسابي', ico('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')],
   ];
   const tabbar = document.createElement('nav');
@@ -82,49 +82,6 @@
       try { if (document.referrer && new URL(document.referrer).origin === location.origin) { e.preventDefault(); history.back(); } } catch { /* نكمل بالرابط العادي */ }
     });
     main?.prepend(a);
-  }
-
-  /* ---------- مباريات تجريبية (فرق وهمية) ---------- */
-  const F = '⚽', B = '🏀', T = '🎾';
-  const data = {
-    yesterday: [['نسور النيل', 'جيزة تايتنز', '2 - 1', F], ['دانكرز جدة', 'كايرو هوبس', '88 - 91', B], ['عمر فهمي', 'سالم الحربي', '2 - 1', T]],
-    today: [['صقور الرياض', 'أسود نجد', '18:30', F], ['أمواج جدة', 'فرسان الدمام', '21:00', F], ['كايرو هوبس', 'دانكرز جدة', '20:00', B]],
-    tomorrow: [['دلتا يونايتد', 'قروش البحر الأحمر', '17:00', F], ['نسور النيل', 'أمواج جدة', '20:45', F], ['سالم الحربي', 'عمر فهمي', '16:00', T]],
-  };
-  const days = ['yesterday', 'today', 'tomorrow'];
-  const sportName = { [F]: 'كرة القدم', [B]: 'كرة السلة', [T]: 'التنس' };
-  let day = days.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'today'; // اليوم محفوظ في الرابط فيرجع له زر الرجوع
-
-  function matchCard(m, i, d) {
-    return `<a class="match" href="match.html?day=${d}&id=${i}">
-      <div class="match-meta"><span>${sportName[m[3]]}</span><span class="tag">${d === 'yesterday' ? 'نتيجة تجريبية' : 'موعد تجريبي'}</span></div>
-      <div class="teams"><div class="team"><span class="crest">${m[3]}</span>${m[0]}</div><div class="score">${m[2]}</div><div class="team"><span class="crest">${m[3]}</span>${m[1]}</div></div>
-      <div class="match-foot"><span>عرض التفاصيل</span><span aria-hidden="true">←</span></div></a>`;
-  }
-  function renderMatches() {
-    const list = $('matches-list');
-    if (list) list.innerHTML = data[day].map((m, i) => matchCard(m, i, day)).join('');
-    const home = $('home-matches');
-    if (home) home.innerHTML = data.today.map((m, i) => matchCard(m, i, 'today')).join('');
-    document.querySelectorAll('[data-day]').forEach((b) => {
-      const on = b.dataset.day === day;
-      b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
-    });
-  }
-  document.querySelectorAll('[data-day]').forEach((b) => b.addEventListener('click', () => {
-    day = b.dataset.day;
-    try { history.replaceState(null, '', '#' + day); } catch { /* بعض المتصفحات تمنعها على file:// */ }
-    renderMatches();
-  }));
-  renderMatches();
-
-  if (current === 'match.html') {
-    const p = new URLSearchParams(location.search);
-    const d = days.includes(p.get('day')) ? p.get('day') : 'today';
-    const m = data[d][Number(p.get('id'))] || data.today[0];
-    $('match-title').textContent = `${m[0]} × ${m[1]}`;
-    $('match-score').innerHTML = `<div class="team"><span class="crest">${m[3]}</span>${m[0]}</div><div class="score">${m[2]}</div><div class="team"><span class="crest">${m[3]}</span>${m[1]}</div>`;
-    document.title = `${m[0]} × ${m[1]} | يلا رياضة`;
   }
 
   /* ---------- متجر تجريبي ---------- */

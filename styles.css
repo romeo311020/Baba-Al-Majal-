@@ -78,11 +78,23 @@ a.feature:hover,a.match:hover,a.product:hover{transform:translateY(-3px);border-
 .feature h3{font-size:19px;margin-bottom:8px}
 .feature p{font-size:14px;margin:0 0 16px}
 .feature b{font-size:13px;color:var(--acc)}
+.news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0}
+.news-card{min-width:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.news-card-image{display:block;aspect-ratio:16/9;background:var(--panel2);overflow:hidden}
+.news-card-image img{width:100%;height:100%;object-fit:cover}
+.news-card-content{padding:18px}
+.news-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:11px}
+.news-meta time{white-space:nowrap}
+.news-card h2{margin:12px 0 8px;font-size:18px;line-height:1.55}
+.news-card h2 a:hover,.news-read-more:hover{color:var(--acc)}
+.news-card p{font-size:13px;line-height:1.8}
+.news-read-more{display:inline-block;margin-top:8px;font-size:12px;font-weight:800}
 .match-meta,.match-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .match-foot{border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
 .teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;text-align:center;gap:8px;padding:18px 0}
 .team{font-size:13px;font-weight:800}
 .crest{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 6px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-size:20px;filter:grayscale(1)}
+.crest img{width:100%;height:100%;padding:5px;object-fit:contain;filter:none}
 .score{font-size:22px;font-weight:900;direction:ltr;white-space:nowrap}
 .product-art,.art{aspect-ratio:4/3;display:grid;place-items:center;font-size:56px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);margin-bottom:12px;overflow:hidden;filter:grayscale(1)}
 .product-art img{width:100%;height:100%;object-fit:cover}
@@ -114,6 +126,33 @@ a.feature:hover,a.match:hover,a.product:hover{transform:translateY(-3px);border-
 .form-stack label{display:grid;gap:6px;font-size:14px;color:var(--muted)}
 .form-stack input,.form-stack textarea,.form-stack select{width:100%;min-height:46px;padding:10px 14px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
 .form-stack input[type=checkbox]{width:auto;min-height:0}
+.account-page{display:grid;place-items:center}
+.account-card{width:min(100%,980px);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;border:1px solid var(--line);border-radius:24px;background:var(--panel);box-shadow:0 24px 80px #0005}
+.account-intro{display:flex;flex-direction:column;justify-content:center;min-height:580px;padding:clamp(28px,6vw,64px);background:radial-gradient(ellipse at 15% 15%,color-mix(in srgb,var(--acc) 18%,transparent),transparent 55%),var(--bg2);border-inline-end:1px solid var(--line)}
+.account-intro h1{max-width:440px;margin:18px 0 12px;font-size:clamp(34px,4vw,48px)}
+.account-intro p{max-width:350px;font-size:16px}
+.account-benefit{margin-top:24px;font-size:14px;font-weight:700}
+.account-benefit span{color:var(--acc);margin-inline-end:6px}
+.account-panel{align-self:center;padding:clamp(24px,5vw,48px)}
+.account-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin-bottom:26px;border:1px solid var(--line);border-radius:13px;background:var(--bg2)}
+.account-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:800}
+.account-tab.active{background:var(--panel);color:var(--text);box-shadow:0 1px 5px #0002}
+.account-heading{margin:0 0 18px;color:var(--text);font-size:20px;font-weight:800}
+.account-form{max-width:none;gap:14px}
+.account-field{color:var(--text)!important;font-size:13px!important;font-weight:700}
+.account-field input{margin-top:1px}
+.account-field input:focus{border-color:var(--acc);outline:2px solid color-mix(in srgb,var(--acc) 30%,transparent);outline-offset:1px}
+.account-submit,.google-button{width:100%;min-height:50px}
+.account-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:12px}
+.account-divider:before,.account-divider:after{content:"";height:1px;flex:1;background:var(--line)}
+.google-button{gap:10px}
+.google-button svg{width:19px;height:19px}
+.account-message{min-height:22px;margin:12px 0 0}
+.account-message-error{color:#ff7777}
+.account-session{display:grid;gap:16px;margin-top:18px}
+.account-session span{overflow-wrap:anywhere;font-weight:700}
+.account-terms{margin:16px 0 0;font-size:11px;text-align:center}
+[hidden]{display:none!important}
 .stat{background:var(--panel2);padding:12px;border-radius:10px;margin:8px 0}
 .statbar{height:8px;background:var(--panel2);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
 .statbar i{display:block;height:100%;background:var(--acc)}
@@ -133,11 +172,16 @@ footer.footer{margin-top:40px;padding:32px 0 calc(32px + env(safe-area-inset-bot
 /* ---------- موبايل ---------- */
 @media(max-width:900px){
   .feature-grid,.match-grid,.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .news-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .chat-layout,.detail-grid{grid-template-columns:1fr}
+  .account-card{grid-template-columns:1fr}
+  .account-intro{min-height:0;padding:32px;border-inline-end:0;border-bottom:1px solid var(--line)}
+  .account-intro h1{max-width:600px}
+  .account-panel{width:min(100%,520px);justify-self:center}
 }
 @media(max-width:700px){
   .page{padding-block:24px 40px}
-  .feature-grid,.match-grid,.product-grid,.lineup{grid-template-columns:1fr}
+  .feature-grid,.match-grid,.product-grid,.news-grid,.lineup{grid-template-columns:1fr}
   .header .nav{min-height:62px;gap:10px;flex-wrap:wrap}
   .header nav{display:none;order:9;width:100%;flex-direction:column;align-items:stretch;margin:0;padding:4px 0 12px}
   .header nav.open{display:flex}
@@ -151,6 +195,9 @@ footer.footer{margin-top:40px;padding:32px 0 calc(32px + env(safe-area-inset-bot
   .tabbar a svg{width:22px;height:22px}
   .tabbar a.active{color:var(--on-acc);background:var(--acc)}
   .messages{max-height:50vh}
+  .account-card{border-radius:18px}
+  .account-intro{padding:26px 22px}
+  .account-panel{padding:26px 22px}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 
