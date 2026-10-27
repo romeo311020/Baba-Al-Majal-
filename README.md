@@ -1,3 +1,26 @@
+# يلا رياضة — دليل الإعداد (ابدأ من هنا)
+
+## قاعدة البيانات والخدمات — بالترتيب
+1. **مشروع Supabase:** supabase.com ← New project (مجاني). اكتب كلمة سر قاعدة البيانات واحفظها.
+2. **الجداول:** SQL Editor ← New query ← الصق كل محتوى `supabase-setup.sql` ← Run. المفروض يظهر نجاح بدون أخطاء.
+3. **مفاتيح الموقع:** Project Settings ← API: انسخ Project URL و **Publishable key** فقط، وضعهم في `supabase-config.js` على GitHub. **ممنوع** Secret/service_role.
+4. **روابط الدخول:** Authentication ← URL Configuration: Site URL = رابط موقعك على GitHub Pages، وأضف نفس الرابط + `/account.html` في Redirect URLs.
+5. **الأدمن:** أنشئ حسابك من `account.html` وأكّد بريدك، ثم في SQL Editor: `update public.profiles set role = 'admin' where email = 'بريدك';`
+6. **المباريات:** Edge Functions ← Deploy a new function (Via Editor) باسم `football-matches` والصق `supabase/functions/football-matches/index.ts`. اجعل **Verify JWT = OFF**. ثم Edge Functions ← Secrets وأضف `API_FOOTBALL_KEY`.
+7. **الأخبار:** نفس الخطوة باسم `sports-news` ومحتوى `supabase/functions/sports-news/index.ts`، والسر `GNEWS_API_KEY`.
+8. **جوجل (اختياري):** زر «تسجيل بجوجل» لا يعمل إلا بعد إعداد مزوّد Google في Authentication ← Providers (يحتاج OAuth client من Google Cloud).
+
+> أسماء الأزرار في لوحة Supabase قد تختلف قليلًا عن الوصف. بدل ذلك يمكن النشر بـ Supabase CLI (الأوامر أدناه) لكنه يحتاج Node.js.
+
+## ملاحظات مهمة
+- الجداول `matches/products/news` لا تغذّي الصفحات حاليًا: المباريات من API-Football، والأخبار من GNews، والمتجر مغلق «قريبًا». القاعدة تُستخدم الآن للحسابات واللوحة.
+- **حصة API-Football المجانية 100 طلب يوميًا:** الدالة تخزّن النتائج مؤقتًا (اليوم 10 دقائق، ومباشر 5 دقائق، أمس/غدًا ساعة) وتتوقف عند 90 طلبًا يوميًا لتعرض آخر نسخة محفوظة. الذاكرة المؤقتة لكل نسخة تشغيل على حدة، فالحصة ليست مضمونة 100% مع زحام كبير؛ الحل الدائم جدول تخزين في القاعدة.
+- لم يُختبر هنا الاتصال الفعلي بـ API-Football أو GNews (الشبكة محجوبة). الاختبار تم على بدائل محاكاة. تحقق من أن باقتك المجانية تعطي مباريات اليوم والدوريات التي تريدها.
+- GNews المجاني فيه تأخير ~12 ساعة، وراجع شروط استخدامه التجاري قبل الربح من الموقع.
+- المساعد ما زال ردودًا جاهزة وليس ذكاءً اصطناعيًا حقيقيًا.
+
+---
+
 # يلا رياضة — V4 (هوية أبيض وأسود)
 
 ## الجديد في V4

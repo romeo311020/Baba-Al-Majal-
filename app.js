@@ -84,19 +84,6 @@
     main?.prepend(a);
   }
 
-  /* ---------- متجر تجريبي ---------- */
-  const products = [
-    ['تيشيرت رياضي', '👕', 'ملابس'], ['كرة قدم', '⚽', 'كرات'], ['حذاء رياضي', '👟', 'أحذية'],
-    ['قفازات حارس مرمى', '🧤', 'معدات'], ['زجاجة مياه رياضية', '🥤', 'إكسسوارات'], ['حقيبة تدريب', '🎒', 'حقائب'],
-  ];
-  const pe = $('products');
-  if (pe) pe.innerHTML = products.map((p, i) => `<a class="product" href="product.html?id=${i}"><div class="product-art">${p[1]}</div><div class="product-content"><span class="tag">${p[2]} · مثال</span><h3>${p[0]}</h3><p>تفاصيل المنتج والبراند ستضاف لاحقًا.</p><b class="product-price">عرض التفاصيل ←</b></div></a>`).join('');
-  if (current === 'product.html') {
-    const p = products[Number(new URLSearchParams(location.search).get('id'))] || products[0];
-    $('product-detail').textContent = p[1];
-    $('product-name').textContent = p[0];
-    document.title = `${p[0]} | يلا رياضة`;
-  }
 
   /* ---------- مساعد تجريبي (ردود جاهزة، لا ذكاء اصطناعي حقيقي) ---------- */
   // المحادثات محفوظة على هذا الجهاز فقط (localStorage). كل النصوص تُعرض بـ textContent فلا تُنفَّذ كـ HTML.

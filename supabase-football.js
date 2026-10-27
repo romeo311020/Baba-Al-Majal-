@@ -74,6 +74,7 @@
       button.classList.toggle('active', button.dataset.day === selectedDay);
       button.addEventListener('click', () => {
         buttons.forEach((item) => item.classList.toggle('active', item === button));
+        try { history.replaceState(null, '', `?day=${button.dataset.day}`); } catch { /* لا مشكلة */ } // زر الرجوع يعود لنفس اليوم
         loadMatches(button.dataset.day);
       });
     });
@@ -131,11 +132,6 @@
     const score = document.getElementById('match-score');
     const note = document.querySelector('main .panel .note');
     const details = document.querySelector('.detail-grid');
-    const backLink = document.createElement('a');
-    backLink.className = 'back';
-    backLink.href = `matches.html?day=${encodeURIComponent(new URLSearchParams(location.search).get('day') || 'today')}`;
-    backLink.textContent = '→ العودة إلى المباريات';
-    document.querySelector('main')?.prepend(backLink);
     if (details) details.hidden = true;
 
     if (!db) {

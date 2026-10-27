@@ -59,6 +59,22 @@ function normalizeFixture(item: ProviderFixture) {
   };
 }
 
+// ---- ذاكرة مؤقتة وحد يومي: الخطة المجانية 100 طلب يوميًا فقط، فلا نمرّر كل زائر للمزوّد ----
+type Cached = { payload: Record<string, unknown>; expires: number };
+const cache = new Map<string, Cached>();
+const inflight = new Map<string, Promise<{ payload?: Record<string, unknown>; error?: string; status?: number }>>();
+const DAILY_BUDGET = 90; // نترك هامشًا من الـ100
+let budgetDay = '';
+let budgetUsed = 0;
+const takeBudget = () => {
+  const today = cairoDate();
+  if (budgetDay !== today) { budgetDay = today; budgetUsed = 0; }
+  if (budgetUsed >= DAILY_BUDGET) return false;
+  budgetUsed += 1;
+  return true;
+};
+const MIN = 60_000;
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return jsonResponse({ error: 'طريقة الطلب غير مدعومة.' }, 405);
@@ -96,30 +112,58 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'نوع الطلب غير معروف.' }, 400);
   }
 
-  try {
-    const response = await fetch(`https://v3.football.api-sports.io/fixtures?${params}`, {
-      headers: { 'x-apisports-key': apiKey },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!response.ok) {
-      return jsonResponse(
-        { error: response.status === 429 ? 'تم تجاوز حد الطلبات في API-Football. حاول لاحقًا.' : 'تعذّر جلب البيانات من API-Football.' },
-        response.status === 429 ? 429 : 502,
-      );
-    }
+  const cacheKey = body.action === 'fixtures' ? `d:${body.date}` : `f:${body.fixtureId}`;
+  const hit = cache.get(cacheKey);
+  if (hit && hit.expires > Date.now()) return jsonResponse(hit.payload);
 
-    const payload = await response.json();
-    if (payload.errors && Object.keys(payload.errors).length > 0) {
-      return jsonResponse({ error: 'رفض API-Football الطلب. تحقق من صلاحية المفتاح والباقة.' }, 502);
-    }
-    const fixtures = (payload.response ?? []).map(normalizeFixture);
-    if (body.action === 'fixture') {
-      const fixture = fixtures.find((item: ReturnType<typeof normalizeFixture>) => item.fixture_id === body.fixtureId);
-      return jsonResponse({ fixture: fixture ?? null });
-    }
-    return jsonResponse({ fixtures });
-  } catch (error) {
-    console.error('API-Football request failed:', error);
-    return jsonResponse({ error: 'تعذّر الاتصال بـ API-Football. حاول مرة أخرى.' }, 502);
+  let job = inflight.get(cacheKey);
+  if (!job) {
+    job = (async () => {
+      if (!takeBudget()) {
+        return hit
+          ? { payload: hit.payload } // نعرض آخر نسخة محفوظة بدل استهلاك الحد
+          : { error: 'تم الوصول للحد اليومي لطلبات المزوّد. حاول غدًا.', status: 429 };
+      }
+      try {
+        const response = await fetch(`https://v3.football.api-sports.io/fixtures?${params}`, {
+          headers: { 'x-apisports-key': apiKey },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!response.ok) {
+          if (hit) return { payload: hit.payload };
+          return {
+            error: response.status === 429 ? 'تم تجاوز حد الطلبات في API-Football. حاول لاحقًا.' : 'تعذّر جلب البيانات من API-Football.',
+            status: response.status === 429 ? 429 : 502,
+          };
+        }
+        const payload = await response.json();
+        if (payload.errors && Object.keys(payload.errors).length > 0) {
+          return { error: 'رفض API-Football الطلب. تحقق من صلاحية المفتاح والباقة.', status: 502 };
+        }
+        const fixtures = (payload.response ?? []).map(normalizeFixture);
+        let out: Record<string, unknown>;
+        let ttl: number;
+        if (body.action === 'fixture') {
+          const fixture = fixtures.find((item: ReturnType<typeof normalizeFixture>) => item.fixture_id === body.fixtureId) ?? null;
+          out = { fixture };
+          ttl = fixture?.status === 'live' ? 3 * MIN : 30 * MIN;
+        } else {
+          out = { fixtures };
+          const anyLive = fixtures.some((item: ReturnType<typeof normalizeFixture>) => item.status === 'live');
+          ttl = anyLive ? 5 * MIN : body.date === cairoDate() ? 10 * MIN : 60 * MIN;
+        }
+        cache.set(cacheKey, { payload: out, expires: Date.now() + ttl });
+        return { payload: out };
+      } catch (error) {
+        console.error('API-Football request failed:', error);
+        if (hit) return { payload: hit.payload };
+        return { error: 'تعذّر الاتصال بـ API-Football. حاول مرة أخرى.', status: 502 };
+      }
+    })().finally(() => inflight.delete(cacheKey));
+    inflight.set(cacheKey, job);
   }
+
+  const result = await job;
+  if (result.payload) return jsonResponse(result.payload);
+  return jsonResponse({ error: result.error ?? 'خطأ غير معروف.' }, result.status ?? 502);
 });
