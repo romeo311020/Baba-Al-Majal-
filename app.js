@@ -1,8 +1,202 @@
-const contact='https://romeo311020.github.io/Romany-Profile/';const current=location.pathname.split('/').pop()||'index.html';const nav=[['index.html','الرئيسية'],['matches.html','المباريات'],['news.html','الأخبار'],['assistant.html','المساعد الذكي'],['store.html','المتجر'],['account.html','حسابي']];const h=document.getElementById('shared-header');if(h)h.innerHTML=`<header class="header"><div class="wrap nav"><a class="brand" href="index.html"><img src="assets/logo.svg"><span><b>يلا رياضة</b><small>YALLA RIYADA</small></span></a><button class="menu" id="menu">☰</button><nav id="nav">${nav.map(([u,t])=>`<a class="${current===u?'active':''}" href="${u}">${t}</a>`).join('')}<a href="${contact}" target="_blank" rel="noopener">تواصل معنا ↗</a></nav></div></header>`;const f=document.getElementById('shared-footer');if(f)f.innerHTML=`<footer class="footer"><div class="wrap foot"><div class="brand"><img src="assets/logo.svg"><span><b>يلا رياضة</b><small>YALLA RIYADA</small></span></div><div class="foot-links"><a href="matches.html">المباريات</a><a href="assistant.html">Yalla AI</a><a href="store.html">المتجر</a><a href="${contact}" target="_blank" rel="noopener">تواصل معنا</a></div><div class="credit">تصميم وتطوير <a href="${contact}" target="_blank" rel="noopener">Romany Garges</a></div><small class="copyright">© ${new Date().getFullYear()} YALLA RIYADA</small></div></footer>`;document.getElementById('menu')?.addEventListener('click',()=>document.getElementById('nav')?.classList.toggle('open'));
-const data={yesterday:[['الأهلي','الزمالك','2 - 1','⚽','🔴'],['ليكرز','واريرز','98 - 102','🏀','🏀'],['نادال','ألكاراز','1 - 2','🎾','🎾']],today:[['مانشستر سيتي','ليفربول','18:30','⚽','🔵'],['برشلونة','ريال مدريد','21:00','⚽','🔵'],['بولز','سيلتكس','20:00','🏀','🏀']],tomorrow:[['أرسنال','تشيلسي','17:00','⚽','🔴'],['ميلان','إنتر','20:45','⚽','🔴'],['نادال','سينر','16:00','🎾','🎾']]};let day='today';function matchCard(m,i){return `<a class="match" href="match.html?day=${day}&id=${i}"><div class="match-meta"><span>${m[3]==='🏀'?'كرة السلة':m[3]==='🎾'?'التنس':'كرة القدم'}</span><span class="tag">${day==='yesterday'?'مثال نتيجة':'موعد تجريبي'}</span></div><div class="teams"><div class="team"><span class="crest">${m[3]}</span>${m[0]}</div><div class="score">${m[2]}</div><div class="team"><span class="crest">${m[4]}</span>${m[1]}</div></div><div class="match-foot"><span>عرض التفاصيل</span><span>←</span></div></a>`}function renderMatches(){const el=document.getElementById('matches-list');if(el)el.innerHTML=data[day].map(matchCard).join('');const home=document.getElementById('home-matches');if(home)home.innerHTML=data.today.map((m,i)=>matchCard(m,i)).join('');document.querySelectorAll('[data-day]').forEach(b=>b.classList.toggle('active',b.dataset.day===day))}document.querySelectorAll('[data-day]').forEach(b=>b.addEventListener('click',()=>{day=b.dataset.day;renderMatches()}));renderMatches();const yr=document.getElementById('year');if(yr)yr.textContent=new Date().getFullYear();
-if(current==='match.html'){const p=new URLSearchParams(location.search),d=p.get('day')||'today',i=Number(p.get('id')||0),m=(data[d]||data.today)[i]||data.today[0];document.getElementById('match-title').textContent=m[0]+' × '+m[1];document.getElementById('match-score').innerHTML=`<div class="team"><span class="crest">${m[3]}</span>${m[0]}</div><div class="score">${m[2]}</div><div class="team"><span class="crest">${m[4]}</span>${m[1]}</div>`}
-const products=[['تيشيرت رياضي','👕','ملابس'],['كرة قدم','⚽','كرات'],['حذاء رياضي','👟','أحذية']];const pe=document.getElementById('products');if(pe)pe.innerHTML=products.map((p,i)=>`<a class="product" href="product.html?id=${i}"><div class="product-art">${p[1]}</div><div class="product-content"><span class="tag">${p[2]} · مثال</span><h3>${p[0]}</h3><p>تفاصيل المنتج والبراند ستضاف لاحقًا.</p><b class="product-price">عرض التفاصيل ←</b></div></a>`).join('');if(current==='product.html'){let p=products[Number(new URLSearchParams(location.search).get('id'))]||products[0];document.getElementById('product-detail').textContent=p[1];document.getElementById('product-name').textContent=p[0]}
-// Local-only demo chat history; not sent to an AI provider.
-let chats=JSON.parse(localStorage.getItem('yr-chats')||'[]'),active=chats.length?chats[chats.length-1].id:Date.now();function saveChats(){localStorage.setItem('yr-chats',JSON.stringify(chats));drawHistory()}function drawHistory(){const el=document.getElementById('history-list');if(el)el.innerHTML=chats.slice().reverse().map(c=>`<button data-chat="${c.id}">${(c.title||'محادثة جديدة').slice(0,30)}</button>`).join('');el?.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>{active=Number(b.dataset.chat);drawChat()})}function drawChat(){const box=document.getElementById('messages');if(!box)return;const c=chats.find(c=>c.id===active);box.innerHTML=(c?.items||[]).map(x=>`<div class="bubble ${x.who==='user'?'user':'bot'}"></div>`).join('');[...(box.children)].forEach((el,i)=>el.textContent=c.items[i].text)}const canned=[[/تسلل/,'التسلل يعتمد على موقع اللاعب لحظة لعب زميله الكرة وعلى مشاركته في اللعب.'],[/هاتريك/,'هاتريك هو تسجيل اللاعب ثلاثة أهداف في مباراة واحدة.'],[/جزاء|بلنتي/,'ركلة الجزاء تُحتسب عند مخالفة تستوجبها داخل منطقة جزاء الفريق المدافع.']];function send(t){if(!t.trim())return;let c=chats.find(c=>c.id===active);if(!c){c={id:active,title:t,items:[]};chats.push(c)}c.items.push({who:'user',text:t});let r=canned.find(x=>x[0].test(t));c.items.push({who:'bot',text:r?r[1]:'هذه نسخة تجريبية لا تتصل بنموذج ذكاء اصطناعي حقيقي بعد. سيتم تفعيل الإجابات الموسعة عند ربط خدمة AI آمنة.'});saveChats();drawChat()}document.getElementById('chat-form')?.addEventListener('submit',e=>{e.preventDefault();const i=document.getElementById('question');send(i.value);i.value=''});document.querySelectorAll('.suggestions button').forEach(b=>b.onclick=()=>send(b.textContent));document.getElementById('new-chat')?.addEventListener('click',()=>{active=Date.now();chats.push({id:active,title:'محادثة جديدة',items:[{who:'bot',text:'بدأنا محادثة جديدة. اكتب سؤالك الرياضي.'}]});saveChats();drawChat()});drawHistory();if(document.getElementById('messages')&&chats.find(c=>c.id===active))drawChat();
-// Demo account and admin settings are local browser storage only; never use as real authentication.
-document.getElementById('account-form')?.addEventListener('submit',e=>{e.preventDefault();localStorage.setItem('yr-demo-account',document.getElementById('email').value);document.getElementById('account-message').textContent='تم تسجيل الدخول التجريبي على هذا الجهاز فقط، بدون إنشاء حساب آمن.'});document.getElementById('logout')?.addEventListener('click',()=>{localStorage.removeItem('yr-demo-account');document.getElementById('account-message').textContent='تم الخروج التجريبي.'});document.getElementById('settings-form')?.addEventListener('submit',e=>{e.preventDefault();localStorage.setItem('yr-site-settings',JSON.stringify({title:document.getElementById('site-title').value,contact:document.getElementById('contact-url').value}));document.getElementById('settings-msg').textContent='تم الحفظ على هذا المتصفح فقط.'});let custom=JSON.parse(localStorage.getItem('yr-demo-products')||'[]');function showAdminProducts(){const el=document.getElementById('admin-products');if(el)el.innerHTML=custom.map(x=>`<p class="stat">${x}</p>`).join('')}document.getElementById('admin-product-form')?.addEventListener('submit',e=>{e.preventDefault();custom.push(document.getElementById('new-product').value);localStorage.setItem('yr-demo-products',JSON.stringify(custom));document.getElementById('new-product').value='';showAdminProducts()});showAdminProducts();
+// يلا رياضة — السكربت المشترك: الهيدر/الفوتر، شريط الموبايل، الثيم، المباريات التجريبية، المتجر، المساعد.
+// كل البيانات هنا تجريبية وخيالية. عند ربط Supabase تُستبدل بالبيانات الحقيقية (انظر supabase-public.js).
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, d = null) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch { /* التخزين غير متاح — لا مشكلة */ } },
+  };
+  const readJson = (k, d) => { try { return JSON.parse(store.get(k, '') || 'null') ?? d; } catch { return d; } };
+
+  const contact = 'https://romeo311020.github.io/Romany-Profile/';
+  const current = location.pathname.split('/').pop() || 'index.html';
+
+  /* ---------- الشعار (يتبدّل لونه مع الثيم) ---------- */
+  const mark = '<svg class="mark" viewBox="0 0 128 128" aria-hidden="true"><rect class="m-bg" width="128" height="128" rx="30"/><path class="m-fg" d="M32 40L64 78M96 40L64 78M64 78V106" fill="none" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/><circle class="m-ball" cx="64" cy="37" r="12.5"/></svg>';
+  const brand = `<a class="brand" href="index.html" aria-label="يلا رياضة — الرئيسية">${mark}<span><b>يلا رياضة</b><small>YALLA RIYADA</small></span></a>`;
+
+  /* ---------- الثيم: داكن (افتراضي) / فاتح ---------- */
+  const root = document.documentElement;
+  const applyTheme = (t) => { if (t === 'light') root.setAttribute('data-theme', 'light'); else root.removeAttribute('data-theme'); };
+  applyTheme(store.get('yr-theme'));
+
+  /* ---------- الهيدر ---------- */
+  const nav = [
+    ['index.html', 'الرئيسية'], ['matches.html', 'المباريات'], ['news.html', 'الأخبار'],
+    ['assistant.html', 'المساعد الذكي'], ['store.html', 'المتجر'], ['account.html', 'حسابي'],
+  ];
+  const header = $('shared-header');
+  if (header) {
+    header.innerHTML = `<header class="header"><div class="wrap nav">${brand}
+      <nav id="nav" aria-label="القائمة الرئيسية">${nav.map(([u, t]) => `<a class="${current === u ? 'active' : ''}" ${current === u ? 'aria-current="page"' : ''} href="${u}">${t}</a>`).join('')}<a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا ↗</a></nav>
+      <button class="icon-btn" id="theme" type="button" aria-label="تبديل الوضع الفاتح/الداكن"></button>
+      <button class="icon-btn menu" id="menu" type="button" aria-label="القائمة" aria-expanded="false">☰</button></div></header>`;
+    const themeBtn = $('theme');
+    const paintTheme = () => { themeBtn.textContent = root.getAttribute('data-theme') === 'light' ? '☾' : '☀'; };
+    paintTheme();
+    themeBtn.addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      applyTheme(next); store.set('yr-theme', next); paintTheme();
+    });
+    $('menu').addEventListener('click', (e) => {
+      const open = $('nav').classList.toggle('open');
+      e.currentTarget.setAttribute('aria-expanded', String(open));
+    });
+  }
+
+  /* ---------- الفوتر ---------- */
+  const footer = $('shared-footer');
+  if (footer) {
+    footer.innerHTML = `<footer class="footer"><div class="wrap foot">${brand}
+      <div class="foot-links"><a href="matches.html">المباريات</a><a href="news.html">الأخبار</a><a href="assistant.html">Yalla AI</a><a href="store.html">المتجر</a><a href="about.html">عن المنصة</a><a href="${contact}" target="_blank" rel="noopener noreferrer">تواصل معنا</a></div>
+      <div class="credit">تصميم وتطوير <a href="${contact}" target="_blank" rel="noopener noreferrer">Romany Garges</a></div>
+      <small class="copyright">© ${new Date().getFullYear()} YALLA RIYADA</small></div></footer>`;
+  }
+
+  /* ---------- شريط التنقل السفلي (موبايل) ---------- */
+  const ico = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const tabs = [
+    ['index.html', 'الرئيسية', ico('<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>')],
+    ['matches.html', 'المباريات', ico('<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/>')],
+    ['assistant.html', 'المساعد', ico('<path d="M12 3l2.2 6.3L21 12l-6.8 2.7L12 21l-2.2-6.3L3 12l6.8-2.7z"/>')],
+    ['store.html', 'المتجر', ico('<path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/>')],
+    ['account.html', 'حسابي', ico('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>')],
+  ];
+  const tabbar = document.createElement('nav');
+  tabbar.className = 'tabbar';
+  tabbar.setAttribute('aria-label', 'التنقل السريع');
+  tabbar.innerHTML = tabs.map(([u, t, i]) => `<a href="${u}" class="${current === u ? 'active' : ''}" ${current === u ? 'aria-current="page"' : ''}>${i}<span>${t}</span></a>`).join('');
+  document.body.appendChild(tabbar);
+
+  /* ---------- زر رجوع داخل الموقع (صفحات التفاصيل) ---------- */
+  const parents = { 'match.html': ['matches.html', 'المباريات'], 'product.html': ['store.html', 'المتجر'] };
+  if (parents[current]) {
+    const [href, label] = parents[current];
+    const main = document.querySelector('main');
+    const a = document.createElement('a');
+    a.className = 'back'; a.href = href; a.textContent = `→ رجوع إلى ${label}`;
+    a.addEventListener('click', (e) => {
+      // لو جاء المستخدم من صفحة داخل نفس الموقع نرجع خطوة واحدة (يحفظ مكانه)، وإلا نذهب للصفحة الأم.
+      try { if (document.referrer && new URL(document.referrer).origin === location.origin) { e.preventDefault(); history.back(); } } catch { /* نكمل بالرابط العادي */ }
+    });
+    main?.prepend(a);
+  }
+
+  /* ---------- مباريات تجريبية (فرق وهمية) ---------- */
+  const F = '⚽', B = '🏀', T = '🎾';
+  const data = {
+    yesterday: [['نسور النيل', 'جيزة تايتنز', '2 - 1', F], ['دانكرز جدة', 'كايرو هوبس', '88 - 91', B], ['عمر فهمي', 'سالم الحربي', '2 - 1', T]],
+    today: [['صقور الرياض', 'أسود نجد', '18:30', F], ['أمواج جدة', 'فرسان الدمام', '21:00', F], ['كايرو هوبس', 'دانكرز جدة', '20:00', B]],
+    tomorrow: [['دلتا يونايتد', 'قروش البحر الأحمر', '17:00', F], ['نسور النيل', 'أمواج جدة', '20:45', F], ['سالم الحربي', 'عمر فهمي', '16:00', T]],
+  };
+  const days = ['yesterday', 'today', 'tomorrow'];
+  const sportName = { [F]: 'كرة القدم', [B]: 'كرة السلة', [T]: 'التنس' };
+  let day = days.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'today'; // اليوم محفوظ في الرابط فيرجع له زر الرجوع
+
+  function matchCard(m, i, d) {
+    return `<a class="match" href="match.html?day=${d}&id=${i}">
+      <div class="match-meta"><span>${sportName[m[3]]}</span><span class="tag">${d === 'yesterday' ? 'نتيجة تجريبية' : 'موعد تجريبي'}</span></div>
+      <div class="teams"><div class="team"><span class="crest">${m[3]}</span>${m[0]}</div><div class="score">${m[2]}</div><div class="team"><span class="crest">${m[3]}</span>${m[1]}</div></div>
+      <div class="match-foot"><span>عرض التفاصيل</span><span aria-hidden="true">←</span></div></a>`;
+  }
+  function renderMatches() {
+    const list = $('matches-list');
+    if (list) list.innerHTML = data[day].map((m, i) => matchCard(m, i, day)).join('');
+    const home = $('home-matches');
+    if (home) home.innerHTML = data.today.map((m, i) => matchCard(m, i, 'today')).join('');
+    document.querySelectorAll('[data-day]').forEach((b) => {
+      const on = b.dataset.day === day;
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  document.querySelectorAll('[data-day]').forEach((b) => b.addEventListener('click', () => {
+    day = b.dataset.day;
+    try { history.replaceState(null, '', '#' + day); } catch { /* بعض المتصفحات تمنعها على file:// */ }
+    renderMatches();
+  }));
+  renderMatches();
+
+  if (current === 'match.html') {
+    const p = new URLSearchParams(location.search);
+    const d = days.includes(p.get('day')) ? p.get('day') : 'today';
+    const m = data[d][Number(p.get('id'))] || data.today[0];
+    $('match-title').textContent = `${m[0]} × ${m[1]}`;
+    $('match-score').innerHTML = `<div class="team"><span class="crest">${m[3]}</span>${m[0]}</div><div class="score">${m[2]}</div><div class="team"><span class="crest">${m[3]}</span>${m[1]}</div>`;
+    document.title = `${m[0]} × ${m[1]} | يلا رياضة`;
+  }
+
+  /* ---------- متجر تجريبي ---------- */
+  const products = [
+    ['تيشيرت رياضي', '👕', 'ملابس'], ['كرة قدم', '⚽', 'كرات'], ['حذاء رياضي', '👟', 'أحذية'],
+    ['قفازات حارس مرمى', '🧤', 'معدات'], ['زجاجة مياه رياضية', '🥤', 'إكسسوارات'], ['حقيبة تدريب', '🎒', 'حقائب'],
+  ];
+  const pe = $('products');
+  if (pe) pe.innerHTML = products.map((p, i) => `<a class="product" href="product.html?id=${i}"><div class="product-art">${p[1]}</div><div class="product-content"><span class="tag">${p[2]} · مثال</span><h3>${p[0]}</h3><p>تفاصيل المنتج والبراند ستضاف لاحقًا.</p><b class="product-price">عرض التفاصيل ←</b></div></a>`).join('');
+  if (current === 'product.html') {
+    const p = products[Number(new URLSearchParams(location.search).get('id'))] || products[0];
+    $('product-detail').textContent = p[1];
+    $('product-name').textContent = p[0];
+    document.title = `${p[0]} | يلا رياضة`;
+  }
+
+  /* ---------- مساعد تجريبي (ردود جاهزة، لا ذكاء اصطناعي حقيقي) ---------- */
+  // المحادثات محفوظة على هذا الجهاز فقط (localStorage). كل النصوص تُعرض بـ textContent فلا تُنفَّذ كـ HTML.
+  const canned = [
+    [/تسلل/, 'اللاعب في موقف تسلل إذا كان أقرب لخط المرمى من الكرة ومن ثاني آخر مدافع لحظة تمرير زميله، وتُحتسب المخالفة فقط إذا شارك في اللعب.'],
+    [/هاتريك/, 'هاتريك هو تسجيل اللاعب ثلاثة أهداف في مباراة واحدة.'],
+    [/جزاء|بلنتي/, 'ركلة الجزاء تُحتسب عند ارتكاب مخالفة تستوجب ركلة حرة مباشرة داخل منطقة جزاء الفريق المدافع.'],
+    [/ركن|كورنر/, 'الركنية تُمنح للمهاجمين عندما تتجاوز الكرة خط المرمى بعد أن لمسها آخر لاعب من الفريق المدافع.'],
+  ];
+  const fallback = 'هذه نسخة تجريبية لا تتصل بنموذج ذكاء اصطناعي حقيقي بعد. جرّب أحد الأسئلة المقترحة، وسيتم تفعيل الإجابات الموسعة عند ربط خدمة AI آمنة.';
+  const box = $('messages');
+  if (box) {
+    let chats = readJson('yr-chats', []);
+    if (!Array.isArray(chats)) chats = [];
+    let active = chats.length ? chats[chats.length - 1].id : Date.now();
+    const welcome = box.innerHTML; // رسالة الترحيب الموجودة في الـ HTML
+
+    const save = () => { store.set('yr-chats', JSON.stringify(chats.slice(-30))); drawHistory(); };
+    const drawHistory = () => {
+      const el = $('history-list'); if (!el) return;
+      el.replaceChildren(...chats.slice().reverse().map((c) => {
+        const b = document.createElement('button'); b.type = 'button';
+        b.textContent = String(c.title || 'محادثة جديدة').slice(0, 30);
+        b.onclick = () => { active = c.id; drawChat(); };
+        return b;
+      }));
+    };
+    const drawChat = () => {
+      const c = chats.find((x) => x.id === active);
+      if (!c) { box.innerHTML = welcome; return; }
+      box.replaceChildren(...c.items.map((x) => {
+        const d = document.createElement('div');
+        d.className = 'bubble ' + (x.who === 'user' ? 'user' : 'bot');
+        d.textContent = x.text; d.dir = 'auto';
+        return d;
+      }));
+      box.scrollTop = box.scrollHeight;
+    };
+    const send = (raw) => {
+      const t = String(raw).trim().slice(0, 500); if (!t) return;
+      let c = chats.find((x) => x.id === active);
+      if (!c) { c = { id: active, title: t, items: [] }; chats.push(c); }
+      else if (!c.title || c.title === 'محادثة جديدة') c.title = t;
+      c.items.push({ who: 'user', text: t });
+      const hit = canned.find((x) => x[0].test(t));
+      c.items.push({ who: 'bot', text: hit ? hit[1] : fallback });
+      save(); drawChat();
+    };
+    $('chat-form')?.addEventListener('submit', (e) => { e.preventDefault(); const i = $('question'); send(i.value); i.value = ''; });
+    document.querySelectorAll('.suggestions button').forEach((b) => { b.type = 'button'; b.onclick = () => send(b.textContent); });
+    $('new-chat')?.addEventListener('click', () => {
+      active = Date.now();
+      chats.push({ id: active, title: 'محادثة جديدة', items: [{ who: 'bot', text: 'بدأنا محادثة جديدة. اكتب سؤالك الرياضي.' }] });
+      save(); drawChat();
+    });
+    const q = $('question'); if (q) q.maxLength = 500;
+    drawHistory();
+    if (chats.some((c) => c.id === active)) drawChat();
+  }
+})();
