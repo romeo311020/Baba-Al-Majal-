@@ -78,7 +78,7 @@
         ? await db.auth.signUp({
           email,
           password: currentPassword,
-          options: { data: { full_name: $('full-name').value.trim() } },
+          options: { data: { full_name: $('full-name').value.trim() }, emailRedirectTo: window.location.href.split(/[?#]/)[0] },
         })
         : await db.auth.signInWithPassword({ email, password: currentPassword });
 
