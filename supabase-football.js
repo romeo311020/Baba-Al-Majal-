@@ -74,7 +74,6 @@
       button.classList.toggle('active', button.dataset.day === selectedDay);
       button.addEventListener('click', () => {
         buttons.forEach((item) => item.classList.toggle('active', item === button));
-        try { history.replaceState(null, '', `?day=${button.dataset.day}`); } catch { /* لا مشكلة */ } // زر الرجوع يعود لنفس اليوم
         loadMatches(button.dataset.day);
       });
     });
@@ -132,6 +131,12 @@
     const score = document.getElementById('match-score');
     const note = document.querySelector('main .panel .note');
     const details = document.querySelector('.detail-grid');
+    const day = new URLSearchParams(location.search).get('day') || 'today';
+    const backLink = document.querySelector('main .back') || document.createElement('a');
+    backLink.className = 'back';
+    backLink.href = `matches.html?day=${encodeURIComponent(day)}`;
+    backLink.textContent = '→ العودة إلى المباريات';
+    if (!backLink.parentElement) document.querySelector('main')?.prepend(backLink);
     if (details) details.hidden = true;
 
     if (!db) {
@@ -159,6 +164,32 @@
         if (note) {
           const state = match.status === 'live' ? 'مباشرة' : match.status === 'finished' ? 'انتهت' : 'قادمة';
           note.textContent = `${match.league} · ${formatDate(match.kickoff)} · ${state}`;
+        }
+
+        const player = document.getElementById('match-player');
+        const playerFrame = document.getElementById('match-player-frame');
+        if (player && playerFrame) {
+          const { data: stream, error: streamError } = await db
+            .from('fixture_streams')
+            .select('embed_url')
+            .eq('fixture_id', Number(fixtureId))
+            .maybeSingle();
+          player.hidden = false;
+          if (streamError) {
+            console.error('Could not load the authorized match player:', streamError);
+            playerFrame.textContent = 'تعذّر تحميل المشغّل. تأكد من تحديث قاعدة البيانات في إعداد Supabase.';
+          } else if (stream?.embed_url && safeLogo(stream.embed_url)) {
+            const frame = document.createElement('iframe');
+            frame.src = stream.embed_url;
+            frame.title = `مشغّل مباراة ${match.home_team} ضد ${match.away_team}`;
+            frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+            frame.allowFullscreen = true;
+            frame.referrerPolicy = 'strict-origin-when-cross-origin';
+            frame.sandbox = 'allow-scripts allow-same-origin allow-presentation';
+            playerFrame.replaceChildren(frame);
+          } else {
+            playerFrame.textContent = 'لم يضف المسؤول مشغّلًا رسميًا لهذه المباراة بعد.';
+          }
         }
       } catch (error) {
         console.error('Could not load API-Football fixture:', error);

@@ -1,26 +1,3 @@
-# يلا رياضة — دليل الإعداد (ابدأ من هنا)
-
-## قاعدة البيانات والخدمات — بالترتيب
-1. **مشروع Supabase:** supabase.com ← New project (مجاني). اكتب كلمة سر قاعدة البيانات واحفظها.
-2. **الجداول:** SQL Editor ← New query ← الصق كل محتوى `supabase-setup.sql` ← Run. المفروض يظهر نجاح بدون أخطاء.
-3. **مفاتيح الموقع:** Project Settings ← API: انسخ Project URL و **Publishable key** فقط، وضعهم في `supabase-config.js` على GitHub. **ممنوع** Secret/service_role.
-4. **روابط الدخول:** Authentication ← URL Configuration: Site URL = رابط موقعك على GitHub Pages، وأضف نفس الرابط + `/account.html` في Redirect URLs.
-5. **الأدمن:** أنشئ حسابك من `account.html` وأكّد بريدك، ثم في SQL Editor: `update public.profiles set role = 'admin' where email = 'بريدك';`
-6. **المباريات:** Edge Functions ← Deploy a new function (Via Editor) باسم `football-matches` والصق `supabase/functions/football-matches/index.ts`. اجعل **Verify JWT = OFF**. ثم Edge Functions ← Secrets وأضف `API_FOOTBALL_KEY`.
-7. **الأخبار:** نفس الخطوة باسم `sports-news` ومحتوى `supabase/functions/sports-news/index.ts`، والسر `GNEWS_API_KEY`.
-8. **جوجل (اختياري):** زر «تسجيل بجوجل» لا يعمل إلا بعد إعداد مزوّد Google في Authentication ← Providers (يحتاج OAuth client من Google Cloud).
-
-> أسماء الأزرار في لوحة Supabase قد تختلف قليلًا عن الوصف. بدل ذلك يمكن النشر بـ Supabase CLI (الأوامر أدناه) لكنه يحتاج Node.js.
-
-## ملاحظات مهمة
-- الجداول `matches/products/news` لا تغذّي الصفحات حاليًا: المباريات من API-Football، والأخبار من GNews، والمتجر مغلق «قريبًا». القاعدة تُستخدم الآن للحسابات واللوحة.
-- **حصة API-Football المجانية 100 طلب يوميًا:** الدالة تخزّن النتائج مؤقتًا (اليوم 10 دقائق، ومباشر 5 دقائق، أمس/غدًا ساعة) وتتوقف عند 90 طلبًا يوميًا لتعرض آخر نسخة محفوظة. الذاكرة المؤقتة لكل نسخة تشغيل على حدة، فالحصة ليست مضمونة 100% مع زحام كبير؛ الحل الدائم جدول تخزين في القاعدة.
-- لم يُختبر هنا الاتصال الفعلي بـ API-Football أو GNews (الشبكة محجوبة). الاختبار تم على بدائل محاكاة. تحقق من أن باقتك المجانية تعطي مباريات اليوم والدوريات التي تريدها.
-- GNews المجاني فيه تأخير ~12 ساعة، وراجع شروط استخدامه التجاري قبل الربح من الموقع.
-- المساعد ما زال ردودًا جاهزة وليس ذكاءً اصطناعيًا حقيقيًا.
-
----
-
 # يلا رياضة — V4 (هوية أبيض وأسود)
 
 ## الجديد في V4
@@ -72,13 +49,13 @@ Romany Garges — https://romeo311020.github.io/Romany-Profile/
 This package adds a real Supabase Auth flow, protected admin panel, database schema, match + product management, and public match/store reads. It is not fully live until the setup below is completed.
 
 ### Setup from GitHub + Supabase dashboard (no local Node/Git required)
-1. In Supabase, open SQL Editor and run the full `supabase-setup.sql` file.
+1. In Supabase, open SQL Editor and run the updated `supabase-setup.sql` file. If the rest of the schema was already installed, run the updated file again to create `fixture_streams` and its RLS policies.
 2. In Supabase Settings → API Keys, copy the Project URL and the **Publishable key** (safe for browser use with correct RLS). Do not use a Secret/service_role key.
 3. Edit `supabase-config.js` in GitHub and replace the two `PASTE_...` placeholders. Commit changes.
-4. Open `account.html` on your published site and create your account. Confirm the email if the project requires it.
+4. Open `account.html` on your published site and create your account. Confirm the email if the project requires it. To enable password recovery, add `https://YOUR_SITE/password-reset.html` under Supabase Authentication → URL Configuration → Redirect URLs.
 5. In Supabase SQL Editor run: `update public.profiles set role = 'admin' where email = 'YOUR_ADMIN_EMAIL';` replacing the example with your exact account email. Do not share passwords or secret keys.
-6. Open `admin.html`, sign in, add a test match, optionally add an official embed URL, and save. Check `matches.html` and the match details page. The store is temporarily closed and displays a coming-soon message.
-7. For iframe playback, the source website must allow embedding. A normal webpage URL may refuse iframe loading; use the provider's official embed URL and follow its terms.
+6. Open `admin.html` and sign in. Add/edit manual matches, or choose an API-Football fixture and its authorized official Embed URL under **مشغّل مباراة مباشرة**. The player appears on that fixture's detail page.
+7. For iframe playback, the source website must allow embedding. Use only a provider's official embed URL and follow its terms; ordinary webpage links may refuse iframe loading.
 
 ### Sports API
 The matches page uses API-Football through `supabase/functions/football-matches`. The provider key stays in Supabase and is never placed in browser JavaScript.
@@ -99,8 +76,11 @@ The Arabic sports-news page uses GNews through `supabase/functions/sports-news`.
 
 Deploy it with `npx supabase functions deploy sports-news --no-verify-jwt`. The page requests up to 10 Arabic sports headlines and links readers to the original publishers. The function caches results in each running instance for 15 minutes. GNews plan limits apply; its free plan currently has a 12-hour data delay and request/article limits. The news page displays an error rather than fictional articles if setup fails.
 
+### Account profile and password recovery
+Signed-in users can edit the name and email from `account.html`; Supabase may require the user to confirm a new email before it takes effect. Signed-in users can set a new password from the same page. Users who forgot their password can request a recovery email, then choose a new password at `password-reset.html`. Add the published reset page to Supabase's allowed redirect URLs as described above. Account changes use Supabase Auth; users cannot change their admin role from the profile page.
+
 ### Security notes
 - Supabase publishable keys are intended for browser use; the database must be protected by RLS. Never expose a Secret/service_role key.
 - Admin access depends on the `profiles.role` row, protected by RLS. The signup flow never lets users choose their own role.
-- This first milestone writes matches/products to Supabase. Existing demo news, AI responses, and chat history are not yet connected to a live AI service or database.
+- News is served by GNews; AI responses and chat history remain demo features.
 - Do not use the site to distribute streams unless you have permission to embed and display them.

@@ -25,6 +25,13 @@ create table if not exists public.matches (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.fixture_streams (
+  fixture_id bigint primary key check (fixture_id > 0),
+  embed_url text not null check (embed_url ~ '^https://'),
+  updated_by uuid references auth.users(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -68,6 +75,7 @@ grant execute on function public.is_admin() to anon, authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.matches enable row level security;
+alter table public.fixture_streams enable row level security;
 alter table public.products enable row level security;
 alter table public.news enable row level security;
 
@@ -85,6 +93,13 @@ create policy "public read published matches" on public.matches for select to an
 drop policy if exists "admins manage matches" on public.matches;
 create policy "admins manage matches" on public.matches for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
+-- Public match pages can read authorized embed URLs; only admins can manage them.
+drop policy if exists "public read fixture streams" on public.fixture_streams;
+create policy "public read fixture streams" on public.fixture_streams for select to anon, authenticated using (true);
+drop policy if exists "admins manage fixture streams" on public.fixture_streams;
+create policy "admins manage fixture streams" on public.fixture_streams for all to authenticated
+using (public.is_admin()) with check (public.is_admin());
+
 drop policy if exists "public read published products" on public.products;
 create policy "public read published products" on public.products for select to anon, authenticated using (is_published or public.is_admin());
 drop policy if exists "admins manage products" on public.products;
@@ -97,6 +112,8 @@ create policy "admins manage news" on public.news for all to authenticated using
 
 grant select on public.matches, public.products, public.news to anon, authenticated;
 grant select, insert, update, delete on public.matches, public.products, public.news to authenticated;
+grant select on public.fixture_streams to anon, authenticated;
+grant insert, update, delete on public.fixture_streams to authenticated;
 grant select on public.profiles to authenticated;
 grant update, insert, delete on public.profiles to authenticated;
 

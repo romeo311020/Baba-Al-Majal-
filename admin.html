@@ -1,1 +1,130 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="theme-color" content="#000000"><title>لوحة التحكم | يلا رياضة</title><link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg"><link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta property="og:site_name" content="يلا رياضة | YALLA RIYADA"><meta property="og:type" content="website"><meta property="og:image" content="assets/brand/og-image.png"><meta name="twitter:card" content="summary_large_image"><script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script><meta name="robots" content="noindex"><link rel="stylesheet" href="styles.css"></head><body><div id="shared-header"></div><main class="wrap page"><span class="kicker">SECURE ADMIN</span><h1>لوحة التحكم</h1><p class="danger-note">تتطلب هذه اللوحة إعداد Supabase وتشغيل ملف SQL أولًا. لا تضع أي Secret key داخل ملفات GitHub.</p><section class="panel" id="admin-login-panel"><h2>دخول المسؤول</h2><form id="admin-login-form" class="form-stack"><input id="admin-email" type="email" placeholder="البريد الإلكتروني" required><input id="admin-password" type="password" placeholder="كلمة المرور" required><button class="btn primary" type="submit">تسجيل الدخول</button></form><p id="admin-auth-message" class="note" role="status"></p><button class="btn outline" id="admin-logout" type="button" hidden>تسجيل الخروج</button></section><div id="admin-workspace" hidden><section class="panel"><h2>إضافة مباراة أو بث رسمي</h2><form id="match-form" class="form-stack"><input id="match-home" placeholder="الفريق الأول" required><input id="match-away" placeholder="الفريق الثاني" required><input id="match-league" placeholder="البطولة"><label>موعد المباراة <input id="match-kickoff" type="datetime-local"></label><label>حالة المباراة<select id="match-status"><option value="scheduled">لم تبدأ</option><option value="live">مباشر</option><option value="finished">انتهت</option></select></label><div class="row"><input id="match-home-score" type="number" min="0" placeholder="نتيجة الفريق الأول"><input id="match-away-score" type="number" min="0" placeholder="نتيجة الفريق الثاني"></div><input id="match-embed" type="url" placeholder="رابط Embed الرسمي (اختياري)"><textarea id="match-notes" placeholder="ملاحظات" rows="3"></textarea><label><input id="match-published" type="checkbox" checked> منشورة للزوار</label><button class="btn primary" type="submit">حفظ المباراة</button></form><p id="match-message" class="note" role="status"></p><div id="admin-matches"></div></section><section class="panel"><h2>إضافة منتج</h2><form id="product-form" class="form-stack"><input id="product-name" placeholder="اسم المنتج" required><textarea id="product-description" placeholder="وصف المنتج" rows="3"></textarea><input id="product-price" type="number" min="0" step="0.01" placeholder="السعر"><input id="product-image" type="url" placeholder="رابط صورة المنتج"><input id="product-buy" type="url" placeholder="رابط الشراء الخارجي (اختياري)"><label><input id="product-published" type="checkbox" checked> منشور</label><button class="btn primary" type="submit">حفظ المنتج</button></form><p id="product-message" class="note" role="status"></p><div id="admin-products"></div></section></div></main><div id="shared-footer"></div><script src="app.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script><script src="supabase-config.js"></script><script src="supabase-client.js"></script><script src="supabase-admin.js"></script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>لوحة الإدارة | يلا رياضة</title>
+  <link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="robots" content="noindex">
+  <script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="shared-header"></div>
+  <main class="wrap page admin-page">
+    <span class="kicker">SECURE ADMIN</span>
+    <div class="admin-title-row">
+      <div>
+        <h1>لوحة الإدارة</h1>
+        <p class="sub">إدارة المباريات ومشغّلات البث المرخّصة ومحتوى الموقع.</p>
+      </div>
+      <button class="btn outline" id="admin-logout" type="button" hidden>تسجيل الخروج</button>
+    </div>
+    <section class="panel" id="admin-login-panel">
+      <h2>دخول المسؤول</h2>
+      <form id="admin-login-form" class="form-stack">
+        <label>البريد الإلكتروني<input id="admin-email" type="email" autocomplete="username" required></label>
+        <label>كلمة المرور<input id="admin-password" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary" type="submit">تسجيل الدخول</button>
+      </form>
+      <p id="admin-auth-message" class="note" role="status" aria-live="polite"></p>
+    </section>
+    <div id="admin-workspace" hidden>
+      <section class="panel admin-section">
+        <div class="admin-section-heading">
+          <div><span class="tag">المباريات</span><h2>إضافة مباراة وإدارتها</h2></div>
+          <p class="note">المباريات اليدوية تظهر للزوار عند تفعيل خيار النشر.</p>
+        </div>
+        <form id="match-form" class="form-stack admin-form">
+          <input id="match-edit-id" type="hidden">
+          <label>الفريق الأول<input id="match-home" required maxlength="100"></label>
+          <label>الفريق الثاني<input id="match-away" required maxlength="100"></label>
+          <label>البطولة<input id="match-league" maxlength="120"></label>
+          <label>موعد المباراة<input id="match-kickoff" type="datetime-local"></label>
+          <label>حالة المباراة
+            <select id="match-status">
+              <option value="scheduled">لم تبدأ</option>
+              <option value="live">مباشر</option>
+              <option value="finished">انتهت</option>
+            </select>
+          </label>
+          <div class="row">
+            <label>نتيجة الفريق الأول<input id="match-home-score" type="number" min="0"></label>
+            <label>نتيجة الفريق الثاني<input id="match-away-score" type="number" min="0"></label>
+          </div>
+          <label>رابط المشغّل الرسمي (اختياري)<input id="match-embed" type="url" inputmode="url" placeholder="https://..."></label>
+          <p class="note">استخدم رابط Embed رسميًا ومصرحًا به فقط. لا تستخدم روابط بث غير مرخصة.</p>
+          <label class="admin-checkbox"><input id="match-published" type="checkbox" checked> نشر المباراة للزوار</label>
+          <div class="row">
+            <button class="btn primary" id="match-save" type="submit">حفظ المباراة</button>
+            <button class="btn outline" id="match-cancel-edit" type="button" hidden>إلغاء التعديل</button>
+          </div>
+        </form>
+        <p id="match-message" class="note" role="status" aria-live="polite"></p>
+        <h3 class="admin-list-title">المباريات اليدوية</h3>
+        <div id="admin-matches"></div>
+      </section>
+
+      <section class="panel admin-section">
+        <div class="admin-section-heading">
+          <div><span class="tag">API-Football</span><h2>مشغّل مباراة مباشرة</h2></div>
+          <p class="note">أدخل رقم المباراة الظاهر من المزوّد لإرفاق المشغّل ببطاقتها وصفحتها.</p>
+        </div>
+        <form id="stream-form" class="form-stack admin-form">
+          <input id="stream-edit-id" type="hidden">
+          <label>اليوم
+            <select id="stream-fixture-day">
+              <option value="yesterday">أمس</option>
+              <option value="today" selected>اليوم</option>
+              <option value="tomorrow">غدًا</option>
+            </select>
+          </label>
+          <label>المباراة
+            <select id="stream-fixture-id" required>
+              <option value="">جارٍ تحميل المباريات...</option>
+            </select>
+          </label>
+          <label>رابط Embed الرسمي للمشغّل
+            <input id="stream-embed-url" type="url" inputmode="url" placeholder="https://..." required>
+          </label>
+          <p id="stream-fixture-status" class="note" role="status" aria-live="polite"></p>
+          <p class="note">يظهر المشغّل داخل صفحة المباراة. يجب أن يسمح الموقع المصدر بالتضمين وأن تملك حق عرضه.</p>
+          <div class="row">
+            <button class="btn primary" id="stream-save" type="submit">حفظ المشغّل</button>
+            <button class="btn outline" id="stream-cancel-edit" type="button" hidden>إلغاء التعديل</button>
+          </div>
+        </form>
+        <p id="stream-message" class="note" role="status" aria-live="polite"></p>
+        <h3 class="admin-list-title">المشغّلات المضافة</h3>
+        <div id="admin-streams"></div>
+      </section>
+
+      <section class="panel admin-section">
+        <span class="tag">المتجر</span>
+        <h2>إدارة المنتجات</h2>
+        <p class="note">قسم المتجر مخفي عن الزوار حاليًا، وستظهر المنتجات عند إعادة فتحه.</p>
+        <form id="product-form" class="form-stack admin-form">
+          <label>اسم المنتج<input id="product-name" required maxlength="160"></label>
+          <label>الوصف<textarea id="product-description" rows="3"></textarea></label>
+          <label>السعر<input id="product-price" type="number" min="0" step="0.01"></label>
+          <label>رابط صورة المنتج<input id="product-image" type="url" inputmode="url"></label>
+          <label>رابط الشراء<input id="product-buy" type="url" inputmode="url"></label>
+          <label class="admin-checkbox"><input id="product-published" type="checkbox" checked> جاهز للنشر عند فتح المتجر</label>
+          <button class="btn primary" type="submit">إضافة المنتج</button>
+        </form>
+        <p id="product-message" class="note" role="status" aria-live="polite"></p>
+        <div id="admin-products"></div>
+      </section>
+    </div>
+  </main>
+  <div id="shared-footer"></div>
+  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="supabase-admin.js"></script>
+</body>
+</html>
