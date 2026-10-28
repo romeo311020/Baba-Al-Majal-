@@ -34,6 +34,12 @@
   const formatDate = (value) => value
     ? new Date(value).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', dateStyle: 'medium', timeStyle: 'short' })
     : 'الموعد لم يحدد';
+  const cairoDay = (value) => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(value));
   const teamMarkup = (name, logo) => {
     const image = safeLogo(logo);
     return `<div class="team"><span class="crest">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : '⚽'}</span>${escapeHtml(name)}</div>`;
@@ -46,7 +52,12 @@
   const request = async (body) => {
     if (!db) throw new Error('إعدادات Supabase غير مكتملة.');
     const { data, error } = await db.functions.invoke('football-matches', { body });
-    if (error) throw error;
+    if (error) {
+      if (/failed to send a request to the edge function/i.test(error.message || '')) {
+        throw new Error('تعذّر الوصول إلى وظيفة Supabase. تأكد من نشر football-matches على مشروع Supabase الصحيح.');
+      }
+      throw error;
+    }
     if (data?.error) throw new Error(data.error);
     return data;
   };
@@ -60,11 +71,49 @@
       <div class="match-foot"><span>${formatDate(match.kickoff)}</span><span>التفاصيل ←</span></div>
     </a>`;
   };
+  const renderManualMatch = (match) => {
+    const score = match.home_score == null || match.away_score == null
+      ? '– : –'
+      : `${escapeHtml(match.home_score)} : ${escapeHtml(match.away_score)}`;
+    return `<a class="match" href="match.html?id=${encodeURIComponent(match.id)}">
+      <div class="match-meta"><span>${escapeHtml(match.league || 'كرة القدم')}</span>${statusMarkup(match.status)}</div>
+      <div class="teams">${teamMarkup(match.home_team)}<div class="score">${score}</div>${teamMarkup(match.away_team)}</div>
+      <div class="match-foot"><span>${formatDate(match.kickoff)}</span><span>التفاصيل ←</span></div>
+    </a>`;
+  };
+  const loadManualMatches = async (day) => {
+    const { data, error } = await db
+      .from('matches')
+      .select('id,home_team,away_team,league,kickoff,status,home_score,away_score')
+      .eq('is_published', true)
+      .order('kickoff', { ascending: true })
+      .limit(100);
+    if (error) throw error;
+
+    const targetDay = localDate(({ yesterday: -1, today: 0, tomorrow: 1 })[day] ?? 0);
+    return (data || []).filter((match) => {
+      if (!match.kickoff) return day === 'today';
+      const timestamp = new Date(match.kickoff).getTime();
+      return Number.isFinite(timestamp) && cairoDay(timestamp) === targetDay;
+    });
+  };
+  const renderMatches = (fixtures, manualMatches, day) => [
+    ...fixtures.map((match) => ({ match, manual: false })),
+    ...manualMatches.map((match) => ({ match, manual: true })),
+  ]
+    .sort((left, right) => {
+      const leftTime = left.match.kickoff ? new Date(left.match.kickoff).getTime() : Infinity;
+      const rightTime = right.match.kickoff ? new Date(right.match.kickoff).getTime() : Infinity;
+      return leftTime - rightTime;
+    })
+    .map(({ match, manual }) => manual ? renderManualMatch(match) : renderFixture(match, day))
+    .join('');
 
   if (location.pathname.endsWith('matches.html')) {
     const host = document.getElementById('matches-list');
     if (!host) return;
 
+    const sourceNote = host.nextElementSibling;
     const buttons = [...document.querySelectorAll('[data-day]')];
     const dateOffsets = { yesterday: -1, today: 0, tomorrow: 1 };
     const url = new URL(window.location.href);
@@ -86,17 +135,35 @@
 
       buttons.forEach((button) => { button.disabled = true; });
       host.innerHTML = '<p class="note">جارٍ تحميل المباريات...</p>';
-      try {
-        const data = await request({ action: 'fixtures', date: localDate(dateOffsets[day] ?? 0) });
-        const fixtures = Array.isArray(data?.fixtures) ? data.fixtures : [];
-        host.innerHTML = fixtures.map((match) => renderFixture(match, day)).join('')
-          || '<p class="note">لم يعثر المزوّد على مباريات متاحة لهذا اليوم ضمن باقتك.</p>';
-      } catch (error) {
-        console.error('Could not load API-Football fixtures:', error);
-        host.innerHTML = `<p class="note">تعذّر تحميل المباريات: ${escapeHtml(error.message || 'خطأ غير معروف')}. حاول مرة أخرى لاحقًا.</p>`;
-      } finally {
-        buttons.forEach((button) => { button.disabled = false; });
+      const [apiResult, manualResult] = await Promise.allSettled([
+        request({ action: 'fixtures', date: localDate(dateOffsets[day] ?? 0) }),
+        loadManualMatches(day),
+      ]);
+      const fixtures = apiResult.status === 'fulfilled' && Array.isArray(apiResult.value?.fixtures)
+        ? apiResult.value.fixtures
+        : [];
+      const manualMatches = manualResult.status === 'fulfilled' ? manualResult.value : [];
+      const errors = [];
+      if (apiResult.status === 'rejected') {
+        console.error('Could not load API-Football fixtures:', apiResult.reason);
+        errors.push(`تعذّر تحميل مباريات المزوّد: ${escapeHtml(apiResult.reason.message || 'خطأ غير معروف')}.`);
       }
+      if (manualResult.status === 'rejected') {
+        console.error('Could not load published manual matches:', manualResult.reason);
+        errors.push(`تعذّر تحميل المباريات اليدوية: ${escapeHtml(manualResult.reason.message || 'خطأ غير معروف')}.`);
+      }
+
+      const cards = renderMatches(fixtures, manualMatches, day);
+      host.innerHTML = [
+        ...errors.map((message) => `<p class="note">${message}</p>`),
+        cards || `<p class="note">${errors.length ? 'لم يتسنّ تحميل المباريات.' : 'لا توجد مباريات متاحة لهذا اليوم.'}</p>`,
+      ].join('');
+      if (sourceNote) {
+        sourceNote.textContent = apiResult.status === 'rejected'
+          ? 'تظهر المباريات المنشورة يدويًا حتى عند توقف خدمة البيانات.'
+          : 'تُعرض مباريات المزوّد والمباريات المنشورة يدويًا، بتوقيت القاهرة.';
+      }
+      buttons.forEach((button) => { button.disabled = false; });
     }
 
     loadMatches(selectedDay);
@@ -109,16 +176,32 @@
     const note = host.nextElementSibling;
     host.innerHTML = '<p class="note">جارٍ تحميل مباريات اليوم...</p>';
     (async () => {
-      try {
-        const data = await request({ action: 'fixtures', date: localDate(0) });
-        const fixtures = Array.isArray(data?.fixtures) ? data.fixtures.slice(0, 3) : [];
-        host.innerHTML = fixtures.map((match) => renderFixture(match, 'today')).join('')
-          || '<p class="note">لا توجد مباريات متاحة اليوم ضمن باقتك.</p>';
-        if (note) note.textContent = 'مواعيد ونتائج حقيقية من API-Football، بتوقيت القاهرة.';
-      } catch (error) {
-        console.error('Could not load today’s API-Football fixtures:', error);
-        host.innerHTML = '<p class="note">تعذّر تحميل المباريات. افتح مركز المباريات أو تحقق من إعداد الخدمة.</p>';
-        if (note) note.textContent = 'سيتم عرض المباريات الحقيقية بعد تفعيل خدمة البيانات.';
+      const [apiResult, manualResult] = await Promise.allSettled([
+        request({ action: 'fixtures', date: localDate(0) }),
+        loadManualMatches('today'),
+      ]);
+      const fixtures = apiResult.status === 'fulfilled' && Array.isArray(apiResult.value?.fixtures)
+        ? apiResult.value.fixtures.slice(0, 3)
+        : [];
+      const manualMatches = manualResult.status === 'fulfilled' ? manualResult.value : [];
+      if (apiResult.status === 'rejected') {
+        console.error('Could not load today’s API-Football fixtures:', apiResult.reason);
+      }
+      if (manualResult.status === 'rejected') {
+        console.error('Could not load published manual matches:', manualResult.reason);
+      }
+
+      const cards = renderMatches(fixtures, manualMatches, 'today');
+      host.innerHTML = cards || '<p class="note">لا توجد مباريات منشورة اليوم حاليًا.</p>';
+      if (note) {
+        const issues = [];
+        if (apiResult.status === 'rejected') {
+          issues.push(`تعذّر تحميل مباريات المزوّد: ${apiResult.reason?.message || 'خطأ غير معروف'}.`);
+        }
+        if (manualResult.status === 'rejected') {
+          issues.push(`تعذّر تحميل المباريات المنشورة: ${manualResult.reason?.message || 'خطأ غير معروف'}.`);
+        }
+        note.textContent = issues.join(' ') || 'مباريات من API-Football والمباريات المنشورة يدويًا، بتوقيت القاهرة.';
       }
     })();
   }
