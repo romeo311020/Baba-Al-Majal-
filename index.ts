@@ -1,31 +1,45 @@
+// يلا رياضة — دالة المباريات (API-Sports). تعمل كوسيط: المفتاح يبقى هنا في Secrets ولا يصل للمتصفح.
+// تدعم كرة القدم وكرة السلة، وتعرض البطولات المهمة فقط (عدّل القوائم أدناه لتغييرها).
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-type ProviderFixture = {
-  fixture?: {
-    id?: number;
-    date?: string;
-    status?: { short?: string };
-  };
-  league?: { name?: string };
-  teams?: {
-    home?: { name?: string; logo?: string };
-    away?: { name?: string; logo?: string };
-  };
-  goals?: { home?: number | null; away?: number | null };
+type Sport = 'football' | 'basketball';
+
+// ---------- البطولات المعروضة ----------
+// كرة القدم: بالأرقام (IDs) في API-Football لتجنّب تشابه الأسماء (مثلًا Premier League في أكثر من دولة).
+// إذا لم تظهر بطولة، راجع رقمها في لوحة API-Football وعدّله هنا.
+const FOOTBALL_LEAGUES: Record<number, string> = {
+  2: 'دوري أبطال أوروبا',
+  12: 'دوري أبطال أفريقيا',
+  39: 'الدوري الإنجليزي الممتاز',
+  140: 'الدوري الإسباني',
+  233: 'الدوري المصري الممتاز',
+};
+// كرة السلة: بالاسم كما يرسله المزوّد.
+const BASKETBALL_LEAGUES: { key: string; label: string; test: (name: string) => boolean }[] = [
+  { key: 'nba', label: 'NBA', test: (n) => /^nba$/i.test(n.trim()) },
+  { key: 'euroleague', label: 'يوروليغ', test: (n) => /^euroleague$/i.test(n.trim()) },
+];
+
+const PROVIDERS: Record<Sport, string> = {
+  football: 'https://v3.football.api-sports.io/fixtures',
+  basketball: 'https://v1.basketball.api-sports.io/games',
 };
 
+const leaguesFor = (sport: Sport) =>
+  sport === 'football'
+    ? Object.entries(FOOTBALL_LEAGUES).map(([key, label]) => ({ key, label }))
+    : BASKETBALL_LEAGUES.map(({ key, label }) => ({ key, label }));
+
+// ---------- أدوات ----------
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=30',
-    },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30' },
   });
 
 function cairoDate(offset = 0) {
@@ -36,41 +50,105 @@ function cairoDate(offset = 0) {
     day: '2-digit',
   }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-  const date = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day) + offset));
-  return date.toISOString().slice(0, 10);
+  return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day) + offset)).toISOString().slice(0, 10);
 }
 
-function normalizeFixture(item: ProviderFixture) {
-  const status = item.fixture?.status?.short ?? '';
-  const liveStatuses = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
-  const finishedStatuses = new Set(['FT', 'AET', 'PEN']);
+const NOTES: Record<string, string> = {
+  PST: 'مؤجلة', POST: 'مؤجلة', CANC: 'ملغاة', SUSP: 'موقوفة', ABD: 'متوقفة', AWD: 'قرار إداري', WO: 'انسحاب', TBD: 'الموعد غير محدد',
+};
 
+type Normalized = {
+  fixture_id: number | undefined;
+  sport: Sport;
+  kickoff: string | null;
+  status: 'live' | 'finished' | 'scheduled';
+  status_note: string;
+  minute: number | null;
+  home_team: string;
+  away_team: string;
+  home_logo: string | null;
+  away_logo: string | null;
+  league: string;
+  league_key: string;
+  league_label: string;
+  league_logo: string | null;
+  home_score: number | null;
+  away_score: number | null;
+};
+
+// deno-lint-ignore no-explicit-any
+function normalizeFootball(item: any): Normalized {
+  const short: string = item.fixture?.status?.short ?? '';
+  const live = new Set(['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE', 'INT']);
+  const done = new Set(['FT', 'AET', 'PEN']);
+  const id = Number(item.league?.id);
   return {
     fixture_id: item.fixture?.id,
+    sport: 'football',
     kickoff: item.fixture?.date ?? null,
-    status: liveStatuses.has(status) ? 'live' : finishedStatuses.has(status) ? 'finished' : 'scheduled',
+    status: live.has(short) ? 'live' : done.has(short) ? 'finished' : 'scheduled',
+    status_note: NOTES[short] ?? '',
+    minute: typeof item.fixture?.status?.elapsed === 'number' ? item.fixture.status.elapsed : null,
     home_team: item.teams?.home?.name ?? 'الفريق الأول',
     away_team: item.teams?.away?.name ?? 'الفريق الثاني',
     home_logo: item.teams?.home?.logo ?? null,
     away_logo: item.teams?.away?.logo ?? null,
     league: item.league?.name ?? 'كرة القدم',
+    league_key: String(id),
+    league_label: FOOTBALL_LEAGUES[id] ?? item.league?.name ?? 'كرة القدم',
+    league_logo: item.league?.logo ?? null,
     home_score: item.goals?.home ?? null,
     away_score: item.goals?.away ?? null,
   };
 }
 
-// ذاكرة مؤقتة وحد طلبات لكل نسخة تشغيل؛ لا يشكّلان حدًا يوميًا مشتركًا بين النسخ.
+// deno-lint-ignore no-explicit-any
+function normalizeBasketball(item: any): Normalized {
+  const short: string = item.status?.short ?? '';
+  const live = new Set(['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'BT', 'HT']);
+  const done = new Set(['FT', 'AOT']);
+  const name: string = item.league?.name ?? '';
+  const found = BASKETBALL_LEAGUES.find((l) => l.test(name));
+  return {
+    fixture_id: item.id,
+    sport: 'basketball',
+    kickoff: item.date ?? null,
+    status: live.has(short) ? 'live' : done.has(short) ? 'finished' : 'scheduled',
+    status_note: NOTES[short] ?? '',
+    minute: null,
+    home_team: item.teams?.home?.name ?? 'الفريق الأول',
+    away_team: item.teams?.away?.name ?? 'الفريق الثاني',
+    home_logo: item.teams?.home?.logo ?? null,
+    away_logo: item.teams?.away?.logo ?? null,
+    league: name || 'كرة السلة',
+    league_key: found?.key ?? name,
+    league_label: found?.label ?? (name || 'كرة السلة'),
+    league_logo: item.league?.logo ?? null,
+    home_score: item.scores?.home?.total ?? null,
+    away_score: item.scores?.away?.total ?? null,
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+const isImportant = (sport: Sport, item: any) =>
+  sport === 'football'
+    ? Number(item.league?.id) in FOOTBALL_LEAGUES
+    : BASKETBALL_LEAGUES.some((l) => l.test(String(item.league?.name ?? '')));
+
+// ---------- ذاكرة مؤقتة وحد يومي (الخطة المجانية 100 طلب يوميًا لكل رياضة) ----------
 type Cached = { payload: Record<string, unknown>; expires: number };
+type JobResult = { payload?: Record<string, unknown>; error?: string; status?: number };
 const cache = new Map<string, Cached>();
-const inflight = new Map<string, Promise<{ payload?: Record<string, unknown>; error?: string; status?: number }>>();
-const INSTANCE_BUDGET = 90;
-let budgetDay = '';
-let budgetUsed = 0;
-const takeBudget = () => {
+const inflight = new Map<string, Promise<JobResult>>();
+const DAILY_BUDGET = 90; // نترك هامشًا من الـ100
+const budgets = new Map<string, { day: string; used: number }>();
+const takeBudget = (sport: Sport) => {
   const today = cairoDate();
-  if (budgetDay !== today) { budgetDay = today; budgetUsed = 0; }
-  if (budgetUsed >= INSTANCE_BUDGET) return false;
-  budgetUsed += 1;
+  const b = budgets.get(sport);
+  if (!b || b.day !== today) budgets.set(sport, { day: today, used: 0 });
+  const cur = budgets.get(sport)!;
+  if (cur.used >= DAILY_BUDGET) return false;
+  cur.used += 1;
   return true;
 };
 const MIN = 60_000;
@@ -82,82 +160,78 @@ Deno.serve(async (request) => {
   const apiKey = Deno.env.get('API_FOOTBALL_KEY');
   if (!apiKey) return jsonResponse({ error: 'مفتاح API-Football غير مضبوط في إعدادات الخادم.' }, 503);
 
-  let body: { action?: string; date?: string; fixtureId?: number };
+  let body: { action?: string; date?: string; fixtureId?: number; sport?: string };
   try {
     body = await request.json();
   } catch {
     return jsonResponse({ error: 'صيغة الطلب غير صالحة.' }, 400);
   }
 
+  const sport: Sport = body.sport === 'basketball' ? 'basketball' : 'football';
   const params = new URLSearchParams({ timezone: 'Africa/Cairo' });
   if (body.action === 'fixtures') {
-    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date)) return jsonResponse({ error: 'التاريخ المطلوب غير صالح.' }, 400);
+    const parsed = new Date(`${body.date}T00:00:00Z`);
+    if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== body.date) {
       return jsonResponse({ error: 'التاريخ المطلوب غير صالح.' }, 400);
     }
-    const parsedDate = new Date(`${body.date}T00:00:00Z`);
-    if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== body.date) {
-      return jsonResponse({ error: 'التاريخ المطلوب غير صالح.' }, 400);
-    }
-    const allowedDates = new Set([cairoDate(-1), cairoDate(), cairoDate(1)]);
-    if (!allowedDates.has(body.date)) {
+    if (![cairoDate(-1), cairoDate(), cairoDate(1)].includes(body.date)) {
       return jsonResponse({ error: 'يمكن طلب مباريات أمس أو اليوم أو غدًا فقط.' }, 400);
     }
     params.set('date', body.date);
   } else if (body.action === 'fixture') {
-    if (typeof body.fixtureId !== 'number' || !Number.isSafeInteger(body.fixtureId) || body.fixtureId < 1) {
-      return jsonResponse({ error: 'رقم المباراة غير صالح.' }, 400);
-    }
+    if (!Number.isSafeInteger(body.fixtureId) || Number(body.fixtureId) < 1) return jsonResponse({ error: 'رقم المباراة غير صالح.' }, 400);
     params.set('id', String(body.fixtureId));
   } else {
     return jsonResponse({ error: 'نوع الطلب غير معروف.' }, 400);
   }
 
-  const cacheKey = body.action === 'fixtures' ? `d:${body.date}` : `f:${body.fixtureId}`;
+  const cacheKey = `${sport}:${body.action === 'fixtures' ? `d:${body.date}` : `f:${body.fixtureId}`}`;
   const hit = cache.get(cacheKey);
   if (hit && hit.expires > Date.now()) return jsonResponse(hit.payload);
 
   let job = inflight.get(cacheKey);
   if (!job) {
-    job = (async () => {
-      if (!takeBudget()) {
-        return hit
-          ? { payload: hit.payload } // نعرض آخر نسخة محفوظة بدل استهلاك الحد
-          : { error: 'تم الوصول للحد اليومي لطلبات المزوّد. حاول غدًا.', status: 429 };
+    job = (async (): Promise<JobResult> => {
+      if (!takeBudget(sport)) {
+        return hit ? { payload: hit.payload } : { error: 'تم الوصول للحد اليومي لطلبات المزوّد. حاول غدًا.', status: 429 };
       }
       try {
-        const response = await fetch(`https://v3.football.api-sports.io/fixtures?${params}`, {
+        const response = await fetch(`${PROVIDERS[sport]}?${params}`, {
           headers: { 'x-apisports-key': apiKey },
           signal: AbortSignal.timeout(10000),
         });
         if (!response.ok) {
           if (hit) return { payload: hit.payload };
           return {
-            error: response.status === 429 ? 'تم تجاوز حد الطلبات في API-Football. حاول لاحقًا.' : 'تعذّر جلب البيانات من API-Football.',
+            error: response.status === 429 ? 'تم تجاوز حد الطلبات في المزوّد. حاول لاحقًا.' : 'تعذّر جلب البيانات من المزوّد.',
             status: response.status === 429 ? 429 : 502,
           };
         }
         const payload = await response.json();
-        if (payload.errors && Object.keys(payload.errors).length > 0) {
-          return { error: 'رفض API-Football الطلب. تحقق من صلاحية المفتاح والباقة.', status: 502 };
-        }
-        const fixtures = (payload.response ?? []).map(normalizeFixture);
+        const hasErrors = Array.isArray(payload.errors) ? payload.errors.length > 0 : payload.errors && Object.keys(payload.errors).length > 0;
+        if (hasErrors) return { error: 'رفض المزوّد الطلب. تحقق من صلاحية المفتاح والباقة.', status: 502 };
+
+        const normalize = sport === 'football' ? normalizeFootball : normalizeBasketball;
+        const rows = Array.isArray(payload.response) ? payload.response : [];
         let out: Record<string, unknown>;
         let ttl: number;
         if (body.action === 'fixture') {
-          const fixture = fixtures.find((item: ReturnType<typeof normalizeFixture>) => item.fixture_id === body.fixtureId) ?? null;
+          const fixture = rows.map(normalize).find((item: Normalized) => item.fixture_id === body.fixtureId) ?? null;
           out = { fixture };
           ttl = fixture?.status === 'live' ? 3 * MIN : 30 * MIN;
         } else {
-          out = { fixtures };
-          const anyLive = fixtures.some((item: ReturnType<typeof normalizeFixture>) => item.status === 'live');
+          const fixtures = rows.filter((item: unknown) => isImportant(sport, item)).map(normalize);
+          out = { fixtures, leagues: leaguesFor(sport) };
+          const anyLive = fixtures.some((item: Normalized) => item.status === 'live');
           ttl = anyLive ? 5 * MIN : body.date === cairoDate() ? 10 * MIN : 60 * MIN;
         }
         cache.set(cacheKey, { payload: out, expires: Date.now() + ttl });
         return { payload: out };
       } catch (error) {
-        console.error('API-Football request failed:', error);
+        console.error('Sports provider request failed:', error);
         if (hit) return { payload: hit.payload };
-        return { error: 'تعذّر الاتصال بـ API-Football. حاول مرة أخرى.', status: 502 };
+        return { error: 'تعذّر الاتصال بالمزوّد. حاول مرة أخرى.', status: 502 };
       }
     })().finally(() => inflight.delete(cacheKey));
     inflight.set(cacheKey, job);

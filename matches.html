@@ -1,1 +1,28 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#000000"><title>المباريات | يلا رياضة</title><link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg"><link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta property="og:site_name" content="يلا رياضة | YALLA RIYADA"><meta property="og:type" content="website"><meta property="og:image" content="assets/brand/og-image.png"><meta name="twitter:card" content="summary_large_image"><script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script><link rel="stylesheet" href="styles.css"></head><body><div id="shared-header"></div><main class="wrap page"><span class="kicker">MATCH CENTER</span><h1>مركز المباريات</h1><p class="sub">مواعيد ونتائج المباريات حسب توقيت القاهرة.</p><div class="pills"><button class="pill" data-day="yesterday">أمس</button><button class="pill active" data-day="today">اليوم</button><button class="pill" data-day="tomorrow">غدًا</button></div><div id="matches-list" class="match-grid" aria-live="polite"></div><p class="note">البيانات مقدمة من API-Football. قد يختلف توفر بعض البطولات حسب باقة المزوّد.</p></main><div id="shared-footer"></div><script src="app.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script><script src="supabase-config.js"></script><script src="supabase-client.js"></script><script src="supabase-football.js"></script></body></html>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#000000"><title>المباريات | يلا رياضة</title><link rel="icon" type="image/svg+xml" href="assets/brand/favicon.svg"><link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest"><meta property="og:site_name" content="يلا رياضة | YALLA RIYADA"><meta property="og:type" content="website"><meta property="og:image" content="assets/brand/og-image.png"><meta name="twitter:card" content="summary_large_image"><script>try{if(localStorage.getItem("yr-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script><link rel="stylesheet" href="styles.css"></head><body><div id="shared-header"></div><main class="wrap page">
+    <span class="kicker">MATCH CENTER</span>
+    <h1>مركز المباريات</h1>
+    <p class="sub" id="mc-sub">أهم البطولات: دوري أبطال أوروبا وأفريقيا، الدوري الإنجليزي والإسباني والمصري.</p>
+
+    <div class="mc-toolbar">
+      <div class="sport-tabs" role="tablist" aria-label="الرياضة">
+        <button class="sport-tab active" type="button" role="tab" aria-selected="true" data-sport="football"><span aria-hidden="true">⚽</span> كرة القدم</button>
+        <button class="sport-tab" type="button" role="tab" aria-selected="false" data-sport="basketball"><span aria-hidden="true">🏀</span> كرة السلة</button>
+      </div>
+      <div class="search-box" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="match-search" type="search" placeholder="ابحث عن فريق أو بطولة… (مثال: الأهلي، ريال مدريد)" autocomplete="off" enterkeyhint="search" aria-label="ابحث عن فريق أو بطولة">
+        <button id="search-clear" type="button" hidden aria-label="مسح البحث">✕</button>
+      </div>
+    </div>
+
+    <div class="pills" role="group" aria-label="اليوم">
+      <button class="pill" type="button" data-day="yesterday">أمس</button>
+      <button class="pill active" type="button" data-day="today">اليوم</button>
+      <button class="pill" type="button" data-day="tomorrow">غدًا</button>
+    </div>
+    <div class="league-chips" id="league-chips" role="group" aria-label="البطولات"></div>
+    <p class="results-count" id="results-count" aria-live="polite"></p>
+
+    <div id="matches-list" class="match-groups" aria-live="polite"></div>
+    <p class="note">البيانات من API-Sports بتوقيت القاهرة. تظهر البطولات المهمة فقط، وتوفرها يعتمد على باقة المزوّد.</p>
+  </main><div id="shared-footer"></div><script src="app.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script><script src="supabase-config.js"></script><script src="supabase-client.js"></script><script src="supabase-football.js"></script></body></html>
