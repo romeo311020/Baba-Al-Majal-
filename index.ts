@@ -59,17 +59,17 @@ function normalizeFixture(item: ProviderFixture) {
   };
 }
 
-// ---- ذاكرة مؤقتة وحد يومي: الخطة المجانية 100 طلب يوميًا فقط، فلا نمرّر كل زائر للمزوّد ----
+// ذاكرة مؤقتة وحد طلبات لكل نسخة تشغيل؛ لا يشكّلان حدًا يوميًا مشتركًا بين النسخ.
 type Cached = { payload: Record<string, unknown>; expires: number };
 const cache = new Map<string, Cached>();
 const inflight = new Map<string, Promise<{ payload?: Record<string, unknown>; error?: string; status?: number }>>();
-const DAILY_BUDGET = 90; // نترك هامشًا من الـ100
+const INSTANCE_BUDGET = 90;
 let budgetDay = '';
 let budgetUsed = 0;
 const takeBudget = () => {
   const today = cairoDate();
   if (budgetDay !== today) { budgetDay = today; budgetUsed = 0; }
-  if (budgetUsed >= DAILY_BUDGET) return false;
+  if (budgetUsed >= INSTANCE_BUDGET) return false;
   budgetUsed += 1;
   return true;
 };
@@ -104,7 +104,7 @@ Deno.serve(async (request) => {
     }
     params.set('date', body.date);
   } else if (body.action === 'fixture') {
-    if (!Number.isSafeInteger(body.fixtureId) || Number(body.fixtureId) < 1) {
+    if (typeof body.fixtureId !== 'number' || !Number.isSafeInteger(body.fixtureId) || body.fixtureId < 1) {
       return jsonResponse({ error: 'رقم المباراة غير صالح.' }, 400);
     }
     params.set('id', String(body.fixtureId));

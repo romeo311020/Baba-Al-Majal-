@@ -54,14 +54,64 @@
     return;
   }
 
+  /* ---------- الملف الشخصي ---------- */
+  // ملاحظة: الاسم المعدَّل يُحفظ في display_name (مفتاح خاص بنا) حتى لا يمسحه تسجيل الدخول بجوجل،
+  // وصورة جوجل تُقرأ فقط ولا نعدّلها أبدًا.
+  let shownUserId = null;
+  let editing = false;
+  const httpsUrl = (value) => { try { const u = new URL(value); return u.protocol === 'https:' ? u.href : ''; } catch { return ''; } };
+  const providersOf = (user) => (user.app_metadata?.providers || [user.app_metadata?.provider]).filter(Boolean);
+  const displayNameOf = (user) => {
+    const m = user.user_metadata || {};
+    return String(m.display_name || m.full_name || m.name || (user.email || '').split('@')[0] || 'مستخدم').trim();
+  };
+  const setEditing = (on, user) => {
+    editing = on;
+    $('profile-form').hidden = !on;
+    $('profile-actions').hidden = on;
+    if (on && user) {
+      $('profile-name').value = displayNameOf(user);
+      $('profile-email').value = user.email || '';
+      $('profile-name').focus();
+    }
+  };
+  let currentUser = null;
   const showUser = (user) => {
     const isSignedIn = Boolean(user);
     authPanel.hidden = isSignedIn;
     dashboard.hidden = !isSignedIn;
-    if (!user) return;
+    document.querySelector('.account-card')?.classList.toggle('signed-in', isSignedIn);
+    if (!user) { shownUserId = null; currentUser = null; setEditing(false); return; }
+    currentUser = user;
+    if (shownUserId !== user.id) { shownUserId = user.id; setEditing(false); setMessage($('profile-message'), ''); }
 
-    $('profile-name').value = user.user_metadata?.full_name || user.user_metadata?.name || '';
+    const name = displayNameOf(user);
+    const picture = httpsUrl(user.user_metadata?.avatar_url || user.user_metadata?.picture || '');
+    const img = $('profile-avatar-img');
+    if (picture) { img.src = picture; img.hidden = false; $('profile-initial').hidden = true; }
+    else { img.removeAttribute('src'); img.hidden = true; $('profile-initial').hidden = false; }
+    $('profile-initial').textContent = name.slice(0, 1).toUpperCase();
+    img.onerror = () => { img.hidden = true; $('profile-initial').hidden = false; };
+    $('profile-title').textContent = name;
+    $('profile-email-text').textContent = user.email || '';
+    const providers = providersOf(user);
+    $('profile-provider').textContent = providers.includes('google') ? 'حساب Google' : 'حساب بالبريد الإلكتروني';
+    $('profile-since').textContent = user.created_at
+      ? `عضو منذ ${new Date(user.created_at).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}`
+      : '';
+    const hasPassword = providers.includes('email');
+    $('password-block').hidden = !hasPassword;
+    $('google-note').hidden = hasPassword;
+    $('avatar-note').hidden = !picture;
+    if (editing) return; // لا نقاطع المستخدم وهو يكتب
+    $('profile-name').value = name;
     $('profile-email').value = user.email || '';
+
+    // هل هو مسؤول؟ (القراءة محمية بسياسات قاعدة البيانات)
+    $('profile-admin').hidden = true; $('admin-link').hidden = true;
+    db.from('profiles').select('role').eq('id', user.id).maybeSingle().then(({ data }) => {
+      if (currentUser?.id === user.id && data?.role === 'admin') { $('profile-admin').hidden = false; $('admin-link').hidden = false; }
+    }).catch(() => {});
   };
 
   loginForm.addEventListener('submit', async (event) => {
@@ -83,7 +133,7 @@
         ? await db.auth.signUp({
           email,
           password: currentPassword,
-          options: { data: { full_name: $('full-name').value.trim() } },
+          options: { data: { full_name: $('full-name').value.trim(), display_name: $('full-name').value.trim() }, emailRedirectTo: window.location.href.split(/[?#]/)[0] },
         })
         : await db.auth.signInWithPassword({ email, password: currentPassword });
 
@@ -136,37 +186,30 @@
     }
   });
 
+  $('edit-profile').addEventListener('click', () => { setMessage($('profile-message'), ''); setEditing(true, currentUser); });
+  $('profile-cancel').addEventListener('click', () => { setEditing(false); setMessage($('profile-message'), ''); if (currentUser) showUser(currentUser); });
+
   $('profile-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!event.currentTarget.reportValidity()) return;
-
     const saveButton = $('profile-save');
-    const previousEmail = $('profile-email').value.trim();
-    const profileName = $('profile-name').value.trim();
-    setBusy(true, [saveButton]);
+    const newName = $('profile-name').value.trim();
+    if (!newName) { $('profile-name').focus(); return; }
+    setBusy(true, [saveButton, $('profile-cancel')]);
     setMessage($('profile-message'), 'جارٍ حفظ بياناتك...');
     try {
-      const { data: currentUserData, error: currentUserError } = await db.auth.getUser();
-      if (currentUserError) throw currentUserError;
-      const currentEmail = currentUserData.user?.email || '';
-      const emailChangeRequested = previousEmail.toLowerCase() !== currentEmail.toLowerCase();
-      const updates = { data: { full_name: profileName } };
-      if (emailChangeRequested) updates.email = previousEmail;
-      const { data, error } = await db.auth.updateUser(updates);
+      const { data: cur, error: curError } = await db.auth.getUser();
+      if (curError) throw curError;
+      // ندمج مع البيانات الحالية فلا تضيع الصورة أو أي حقل آخر
+      const { data, error } = await db.auth.updateUser({ data: { ...(cur.user.user_metadata || {}), display_name: newName } });
       if (error) throw error;
-      const emailChangePending = emailChangeRequested
-        && data.user.email.toLowerCase() !== previousEmail.toLowerCase();
+      setEditing(false);
       showUser(data.user);
-      setMessage(
-        $('profile-message'),
-        emailChangePending
-          ? 'تم تحديث الاسم. أرسلنا رسالة تأكيد إلى البريد الجديد؛ سيظل بريدك الحالي مستخدمًا حتى تأكيده.'
-          : 'تم حفظ بيانات حسابك.',
-      );
+      setMessage($('profile-message'), 'تم حفظ بيانات حسابك.');
     } catch (error) {
       setMessage($('profile-message'), `تعذّر حفظ البيانات: ${error.message}`, true);
     } finally {
-      setBusy(false, [saveButton]);
+      setBusy(false, [saveButton, $('profile-cancel')]);
     }
   });
 
